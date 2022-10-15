@@ -33,20 +33,27 @@ def get_help():
     return build_response(build_short_speechlet_response(output, should_end_session))
 
 
-def get_battery_level(headers):
-    system_data = get_latest_system_data(headers)
-    if "error" in system_data:
-        output = system_data["error"]
+def get_battery_level_response(headers):
+    battery_level = get_battery_level(headers)
+    if type(battery_level) in (int, float):
+        output = "Your battery is "+str(battery_level)+"% full."
     else:
-        battery_percentage = system_data["data"]["battery"]["percent"]
-        output = "Your battery is "+str(battery_percentage)+"% full."
+        output = battery_level
     should_end_session = True
     return build_response(build_short_speechlet_response(output, should_end_session))
 
 
+def get_battery_level(headers):
+    system_data = get_latest_system_data(headers)
+    if "error" in system_data:
+        return system_data["error"]
+    else:
+        return system_data["data"]["battery"]["percent"]
+
+
 def get_grid_voltage_response(headers):
     grid_voltage = get_grid_voltage(headers)
-    if type(grid_voltage) == float:
+    if type(grid_voltage) in (int, float):
         output = "The grid is at "+str(grid_voltage)+" volts."
     else:
         output = grid_voltage
@@ -126,7 +133,7 @@ def on_intent(event, headers):
     intent_name = event["request"]["intent"]["name"]
     # Dispatch to your skill"s intent handlers
     if intent_name == "BatteryIntent":
-        return get_battery_level(headers)
+        return get_battery_level_response(headers)
     elif intent_name == "GridVoltageIntent":
         return get_grid_voltage_response(headers)
     elif intent_name == "SolarGenerationIntent":
