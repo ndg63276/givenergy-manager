@@ -44,15 +44,22 @@ def get_battery_level(headers):
     return build_response(build_short_speechlet_response(output, should_end_session))
 
 
+def get_grid_voltage_response(headers):
+    grid_voltage = get_grid_voltage(headers)
+    if type(grid_voltage) == float:
+        output = "The grid is at "+str(grid_voltage)+" volts."
+    else:
+        output = grid_voltage
+    should_end_session = True
+    return build_response(build_short_speechlet_response(output, should_end_session))
+
+
 def get_grid_voltage(headers):
     system_data = get_latest_system_data(headers)
     if "error" in system_data:
-        output = system_data["error"]
+        return system_data["error"]
     else:
-        grid_voltage = system_data["data"]["grid"]["voltage"]
-        output = "The grid is at "+str(grid_voltage)+" volts."
-    should_end_session = True
-    return build_response(build_short_speechlet_response(output, should_end_session))
+        return system_data["data"]["grid"]["voltage"]
 
 
 def get_solar_power(headers):
@@ -113,7 +120,7 @@ def on_intent(event, headers):
     if intent_name == "BatteryIntent":
         return get_battery_level(headers)
     elif intent_name == "GridVoltageIntent":
-        return get_grid_voltage(headers)
+        return get_grid_voltage_response(headers)
     elif intent_name == "SolarGenerationIntent":
         return get_solar_power(headers)
     elif intent_name == "ConsumptionIntent":
