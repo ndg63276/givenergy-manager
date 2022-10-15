@@ -114,6 +114,14 @@ def get_latest_system_data(headers, inverter_id=None):
     return r.json()
 
 
+def restart_inverter(headers):
+    devices = get_communication_devices(headers)
+    inverter_id = devices["data"][0]["inverter"]["serial"]
+    url = "https://givenergy.cloud/internal-api/inverter/actions/"+inverter_id+"/restart"
+    r = requests.post(url, headers=headers)
+    return r.json()
+
+
 def on_intent(event, headers):
     intent_name = event["request"]["intent"]["name"]
     # Dispatch to your skill"s intent handlers
@@ -154,8 +162,8 @@ def build_account_linking_response(output, should_end_session):
             "text": output
         },
         "card": {
-			"type": "LinkAccount"
-		},
+            "type": "LinkAccount"
+        },
         "shouldEndSession": should_end_session
     }
 
