@@ -129,6 +129,29 @@ def restart_inverter(headers):
     return r.json()
 
 
+def get_AC_charge_limit(headers, inverter_id=None):
+    if inverter_id is None:
+        devices = get_communication_devices(headers)
+        inverter_id = devices["data"][0]["inverter"]["serial"]
+    url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/77/read'
+    r = requests.post(url, headers=headers)
+    if 'data' in r.json() and 'value' in r.json()['data']:
+        return r.json()['data']['value']
+    return None
+
+
+def set_AC_charge_limit(headers, value, inverter_id=None):
+    if inverter_id is None:
+        devices = get_communication_devices(headers)
+        inverter_id = devices["data"][0]["inverter"]["serial"]
+    url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/77/write'
+    payload = { "value": value }
+    r = requests.post(url, headers=headers, json=payload)
+    if 'data' in r.json() and 'success' in r.json()['data']:
+        return r.json()['data']['success']
+
+
+
 def on_intent(event, headers):
     intent_name = event["request"]["intent"]["name"]
     # Dispatch to your skill"s intent handlers
