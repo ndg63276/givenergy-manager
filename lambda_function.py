@@ -121,6 +121,12 @@ def get_latest_system_data(headers, inverter_id=None):
     return r.json()
 
 
+def get_inverter_status(headers):
+    devices = get_communication_devices(headers)
+    inverter_status = devices["data"][0]["inverter"]["status"]
+    return inverter_status
+
+
 def restart_inverter(headers):
     devices = get_communication_devices(headers)
     inverter_id = devices["data"][0]["inverter"]["serial"]
