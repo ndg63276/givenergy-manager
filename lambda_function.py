@@ -157,8 +157,19 @@ def set_AC_charge_limit(headers, value, inverter_id=None):
     url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/77/write'
     payload = { "value": value }
     r = requests.post(url, headers=headers, json=payload)
+    success = False
     if 'data' in r.json() and 'success' in r.json()['data']:
-        return r.json()['data']['success']
+        success = r.json()['data']['success']
+    if success and value < 100:
+        # enable AC charge upper limit
+        url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/17/write'
+        payload = { "value": True }
+        r = requests.post(url, headers=headers, json=payload)
+        if 'data' in r.json() and 'success' in r.json()['data']:
+            success = r.json()['data']['success']
+        else:
+            success = False
+    return success
 
 
 def get_solcast_forecast(solcast_key, solcast_site):
