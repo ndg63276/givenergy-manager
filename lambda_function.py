@@ -110,13 +110,19 @@ def get_status(headers):
     return build_response(build_short_speechlet_response(output, should_end_session))
 
 
+def get_inverter_id(headers):
+    devices = get_communication_devices(headers)
+    if "data" in devices:
+        return devices["data"][0]["inverter"]["serial"]
+    else:
+        return None
+
+
 def get_latest_system_data(headers, inverter_id=None):
     if inverter_id is None:
-        devices = get_communication_devices(headers)
-        if "data" in devices:
-            inverter_id = devices["data"][0]["inverter"]["serial"]
-        else:
-            return {"error": "I wasn't able to get device data from your system. Please try re-linking the skill."}
+        inverter_id = get_inverter_id(headers)
+    if inverter_id is None:
+        return {"error": "I wasn't able to get device data from your system. Please try re-linking the skill."}
     url = "https://api.givenergy.cloud/v1/inverter/"+inverter_id+"/system-data/latest"
     r = requests.get(url, headers=headers)
     return r.json()
@@ -129,8 +135,7 @@ def get_inverter_status(headers):
 
 
 def restart_inverter(headers):
-    devices = get_communication_devices(headers)
-    inverter_id = devices["data"][0]["inverter"]["serial"]
+    inverter_id = get_inverter_id(headers)
     url = "https://givenergy.cloud/internal-api/inverter/actions/"+inverter_id+"/restart"
     r = requests.post(url, headers=headers)
     return r.json()
@@ -138,8 +143,7 @@ def restart_inverter(headers):
 
 def get_AC_charge_limit(headers, inverter_id=None):
     if inverter_id is None:
-        devices = get_communication_devices(headers)
-        inverter_id = devices["data"][0]["inverter"]["serial"]
+        inverter_id = get_inverter_id(headers)
     url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/77/read'
     r = requests.post(url, headers=headers)
     if 'data' in r.json() and 'value' in r.json()['data']:
@@ -149,8 +153,7 @@ def get_AC_charge_limit(headers, inverter_id=None):
 
 def set_AC_charge_limit(headers, value, inverter_id=None):
     if inverter_id is None:
-        devices = get_communication_devices(headers)
-        inverter_id = devices["data"][0]["inverter"]["serial"]
+        inverter_id = get_inverter_id(headers)
     url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/77/write'
     payload = { "value": value }
     r = requests.post(url, headers=headers, json=payload)
