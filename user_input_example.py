@@ -13,3 +13,5 @@ not_sunny_day = 10  # anything below this (in kWh) is considered not sunny
 not_sunny_day_charge = 100  # charge to this percentage for any not sunny day
 
 time_to_set_max_charge = 2000  # 24hr clock representation of the time to set the max charge
+
+times_to_check_errors = [2,32]  # minutes past the hour to check for errors
