@@ -1,22 +1,11 @@
 #!/usr/bin/python3
 
-import smtplib
-from email.mime.text import MIMEText
 from time import sleep
 from datetime import datetime
-from lambda_function import get_headers, restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit, get_tomorrows_forecast_total
+from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit
+from solcast_functions import get_tomorrows_forecast_total
+from general_functions import get_headers, send_email
 from user_input import *
-
-
-def send_email(subject, body):
-        msg = MIMEText(body)
-        msg['Subject'] = subject
-        msg['From'] = email_address
-        msg['To'] = email_address
-        smtp_server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        smtp_server.login(email_address, email_password)
-        smtp_server.sendmail(email_address, email_address, msg.as_string())
-        smtp_server.quit()
 
 
 def check_for_errors(headers):
