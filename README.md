@@ -37,3 +37,6 @@ Between 9am and 6pm keep the battery level high, but if it gets above 85%, turn 
 * tapo_ip - local IP address of the Tapo plug
 * tapo_username - your Tapo username
 * tapo_password - your Tapo password
+
+### Alexa Skill
+GivEnergy has it's own official Alexa skill, but if you want to deploy your own, you can do using the included interaction model. Upload that to the JSON editor in the Amazon developer console. Then upload all the files to AWS Lambda, and the skill will use the lambda_function.py file.
