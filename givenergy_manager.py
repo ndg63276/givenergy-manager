@@ -66,8 +66,6 @@ def tapo_charge_if_battery_full(headers):
         start_time = datetime.strptime(today+time_and_level[0], "%Y%m%d%H:%M")
         if datetime.now() > start_time:
              reqd_battery_level = time_and_level[1]
-    if reqd_battery_level >= 100:
-        return
     battery_level = get_battery_level(headers)
     body = "GivEnergy battery at "+str(battery_level)+"%\n"
     body += "Required battery is "+str(reqd_battery_level)+"%\n"
