@@ -1,14 +1,7 @@
 import requests
 from datetime import datetime, timedelta
-
-
-def get_headers(apikey):
-    headers = {
-        "Authorization": "Bearer " + apikey,
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-    }
-    return headers
+from givenergy_functions import get_battery_level, get_grid_voltage, get_solar_power, get_consumption
+from general_functions import get_headers
 
 
 def lambda_handler(event, context):
@@ -34,6 +27,10 @@ def get_help():
     return build_response(build_short_speechlet_response(output, should_end_session))
 
 
+def do_nothing():
+    return build_response({})
+
+
 def get_battery_level_response(headers):
     battery_level = get_battery_level(headers)
     if type(battery_level) in (int, float):
@@ -42,14 +39,6 @@ def get_battery_level_response(headers):
         output = battery_level
     should_end_session = True
     return build_response(build_short_speechlet_response(output, should_end_session))
-
-
-def get_battery_level(headers):
-    system_data = get_latest_system_data(headers)
-    if "error" in system_data:
-        return system_data["error"]
-    else:
-        return system_data["data"]["battery"]["percent"]
 
 
 def get_grid_voltage_response(headers):
@@ -62,14 +51,6 @@ def get_grid_voltage_response(headers):
     return build_response(build_short_speechlet_response(output, should_end_session))
 
 
-def get_grid_voltage(headers):
-    system_data = get_latest_system_data(headers)
-    if "error" in system_data:
-        return system_data["error"]
-    else:
-        return system_data["data"]["grid"]["voltage"]
-
-
 def get_solar_power_response(headers):
     solar_power = get_solar_power(headers)
     if type(solar_power) in (int, float):
@@ -80,14 +61,6 @@ def get_solar_power_response(headers):
     return build_response(build_short_speechlet_response(output, should_end_session))
 
 
-def get_solar_power(headers):
-    system_data = get_latest_system_data(headers)
-    if "error" in system_data:
-        return system_data["error"]
-    else:
-        return system_data["data"]["solar"]["power"]
-
-
 def get_consumption_response(headers):
     consumption = get_consumption(headers)
     if type(consumption) in (int, float):
@@ -96,103 +69,6 @@ def get_consumption_response(headers):
         output = consumption
     should_end_session = True
     return build_response(build_short_speechlet_response(output, should_end_session))
-
-
-def get_consumption(headers):
-    system_data = get_latest_system_data(headers)
-    if "error" in system_data:
-        return system_data["error"]
-    else:
-        return system_data["data"]["consumption"]
-
-
-def get_communication_devices(headers):
-    url = "https://api.givenergy.cloud/v1/communication-device"
-    params = {"page": "1"}
-    r = requests.get(url, headers=headers, params=params)
-    return r.json()
-
-
-def get_inverter_id(headers):
-    devices = get_communication_devices(headers)
-    if "data" in devices:
-        return devices["data"][0]["inverter"]["serial"]
-    else:
-        return None
-
-
-def get_latest_system_data(headers, inverter_id=None):
-    if inverter_id is None:
-        inverter_id = get_inverter_id(headers)
-    if inverter_id is None:
-        return {"error": "I wasn't able to get device data from your system. Please try re-linking the skill."}
-    url = "https://api.givenergy.cloud/v1/inverter/"+inverter_id+"/system-data/latest"
-    r = requests.get(url, headers=headers)
-    return r.json()
-
-
-def get_inverter_status(headers):
-    devices = get_communication_devices(headers)
-    inverter_status = devices["data"][0]["inverter"]["status"]
-    return inverter_status
-
-
-def restart_inverter(headers):
-    inverter_id = get_inverter_id(headers)
-    url = "https://givenergy.cloud/internal-api/inverter/actions/"+inverter_id+"/restart"
-    r = requests.post(url, headers=headers)
-    return r.json()
-
-
-def get_AC_charge_limit(headers, inverter_id=None):
-    if inverter_id is None:
-        inverter_id = get_inverter_id(headers)
-    url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/77/read'
-    r = requests.post(url, headers=headers)
-    if 'data' in r.json() and 'value' in r.json()['data']:
-        return r.json()['data']['value']
-    return None
-
-
-def set_AC_charge_limit(headers, value, inverter_id=None):
-    if inverter_id is None:
-        inverter_id = get_inverter_id(headers)
-    url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/77/write'
-    payload = { "value": value }
-    r = requests.post(url, headers=headers, json=payload)
-    success = False
-    if 'data' in r.json() and 'success' in r.json()['data']:
-        success = r.json()['data']['success']
-    if success and value < 100:
-        # enable AC charge upper limit
-        url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/17/write'
-        payload = { "value": True }
-        r = requests.post(url, headers=headers, json=payload)
-        if 'data' in r.json() and 'success' in r.json()['data']:
-            success = r.json()['data']['success']
-        else:
-            success = False
-    return success
-
-
-def get_solcast_forecast(solcast_key, solcast_site):
-    solcast_headers = get_headers(solcast_key)
-    url = 'https://api.solcast.com.au/rooftop_sites/'+solcast_site+'/forecasts?format=json'
-    r = requests.get(url, headers=solcast_headers)
-    if 'forecasts' in r.json():
-        return r.json()['forecasts']
-    return []
-
-
-def get_tomorrows_forecast_total(solcast_key, solcast_site):
-    forecast = get_solcast_forecast(solcast_key, solcast_site)
-    total = 0
-    tomorrow = datetime.now()+timedelta(days=1)
-    for i in forecast:
-        end = datetime.strptime(i['period_end'], '%Y-%m-%dT%H:%M:%S.%f0Z')
-        if end.date() == tomorrow.date():
-            total += i['pv_estimate'] / 2
-    return total
 
 
 def on_intent(event, headers):
