@@ -23,12 +23,14 @@ This repo has some utilities for GivEnergy batteries/inverters. It has 3 main fu
 * time_to_set_max_charge - the time you want to set the charge percentage for tomorrow. Needs to be before midnight, and before your cheap import rate starts. Format is eg "21:00"
 * times_to_check_errors - a list of times per hour to check the inverter for errors. Recommend [0,30] to check every half hour, or [] to disable error checking.
 * battery_full_levels - a list of pairs of times and battery percentages for controlling a Tapo smart plug. eg
-```battery_full_levels = [
+```
+battery_full_levels = [
     ["01:30", 10],
     ["05:30", 50],
     ["09:00", 85],
     ["18:00", 100],
-]```
+]
+```
 This might correspond to 4 hours of cheap electricity from 01:30 to 05:30, so keep the battery level above 10% for that time (probably while charging the battery)
 Between 9am and 6pm keep the battery level high, but if it gets above 85%, turn on the Tapo plug to avoid exporting if possible.
 * tapo_enable_if_battery_full - set True or False to enable/disable the Tapo switching. True requires the Tapo library from https://github.com/fishbigger/TapoP100 to be installed
