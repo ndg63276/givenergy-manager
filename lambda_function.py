@@ -1,6 +1,6 @@
 import requests
 from datetime import datetime, timedelta
-from givenergy_functions import get_battery_level, get_grid_voltage, get_solar_power, get_consumption
+from givenergy_functions import get_battery_level, get_grid_voltage, get_solar_power, get_consumption, set_AC_charge_limit
 from general_functions import get_headers
 
 
@@ -71,6 +71,21 @@ def get_consumption_response(headers):
     return build_response(build_short_speechlet_response(output, should_end_session))
 
 
+def set_AC_charge_limit_response(event, headers):
+    slots = event["request"]["intent"]["slots"]
+    if 'charge_limit' in slots and 'value' in slots['charge_limit']:
+        value = int(slots['charge_limit']['value'])
+        success = set_AC_charge_limit(headers, value)
+        if success:
+            output = "Ok, set to "+str(value)+"%."
+        else:
+            output = "Sorry, I didn't manage to change the setting."
+    else:
+        output = "Sorry, I didn't hear the number to set."
+    should_end_session = True
+    return build_response(build_short_speechlet_response(output, should_end_session))
+
+
 def on_intent(event, headers):
     intent_name = event["request"]["intent"]["name"]
     # Dispatch to your skill"s intent handlers
@@ -82,6 +97,8 @@ def on_intent(event, headers):
         return get_solar_power_response(headers)
     elif intent_name == "ConsumptionIntent":
         return get_consumption_response(headers)
+    elif intent_name == "SetChargeLimitIntent":
+        return set_AC_charge_limit_response(event, headers)
     elif intent_name == "AMAZON.HelpIntent":
         return get_help()
     elif intent_name == "AMAZON.CancelIntent":
@@ -121,4 +138,3 @@ def build_response(speechlet_response):
         "sessionAttributes": {},
         "response": speechlet_response
     }
-

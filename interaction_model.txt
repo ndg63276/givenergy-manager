@@ -59,6 +59,20 @@
                         "How much electricity am I using",
                         "How much power am I using"
                     ]
+                },
+                {
+                    "name": "SetChargeLimitIntent",
+                    "slots": [
+                        {
+                            "name": "charge_limit",
+                            "type": "AMAZON.NUMBER"
+                        }
+                    ],
+                    "samples": [
+                        "set my charge limit to {charge_limit} percent",
+                        "set a c charge limit to {charge_limit} percent",
+                        "charge to {charge_limit} percent tonight"
+                    ]
                 }
             ],
             "types": []
