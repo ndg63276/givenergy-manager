@@ -70,13 +70,30 @@ def get_grid_voltage(headers):
         return system_data["data"]["grid"]["voltage"]
 
 
+def get_solar_power_response(headers):
+    solar_power = get_solar_power(headers)
+    if type(solar_power) in (int, float):
+        output = "You are currently generating "+str(solar_power)+" watts."
+    else:
+        output = solar_power
+    should_end_session = True
+    return build_response(build_short_speechlet_response(output, should_end_session))
+
+
 def get_solar_power(headers):
     system_data = get_latest_system_data(headers)
     if "error" in system_data:
-        output = system_data["error"]
+        return system_data["error"]
     else:
-        solar_power = system_data["data"]["solar"]["power"]
-        output = "You are currently generating "+str(solar_power)+" watts."
+        return system_data["data"]["solar"]["power"]
+
+
+def get_consumption_response(headers):
+    consumption = get_consumption(headers)
+    if type(consumption) in (int, float):
+        output = "You are currently using "+str(consumption)+" watts."
+    else:
+        output = consumption
     should_end_session = True
     return build_response(build_short_speechlet_response(output, should_end_session))
 
@@ -84,12 +101,9 @@ def get_solar_power(headers):
 def get_consumption(headers):
     system_data = get_latest_system_data(headers)
     if "error" in system_data:
-        output = system_data["error"]
+        return system_data["error"]
     else:
-        consumption = system_data["data"]["consumption"]
-        output = "You are currently using "+str(consumption)+" watts."
-    should_end_session = True
-    return build_response(build_short_speechlet_response(output, should_end_session))
+        return system_data["data"]["consumption"]
 
 
 def get_communication_devices(headers):
@@ -97,17 +111,6 @@ def get_communication_devices(headers):
     params = {"page": "1"}
     r = requests.get(url, headers=headers, params=params)
     return r.json()
-
-
-def get_status(headers):
-    system_data = get_latest_system_data(headers)
-    if "error" in system_data:
-        output = system_data["error"]
-    else:
-        consumption = system_data["data"]["consumption"]
-        output = "You are currently using "+str(consumption)+" watts."
-    should_end_session = True
-    return build_response(build_short_speechlet_response(output, should_end_session))
 
 
 def get_inverter_id(headers):
@@ -200,11 +203,9 @@ def on_intent(event, headers):
     elif intent_name == "GridVoltageIntent":
         return get_grid_voltage_response(headers)
     elif intent_name == "SolarGenerationIntent":
-        return get_solar_power(headers)
+        return get_solar_power_response(headers)
     elif intent_name == "ConsumptionIntent":
-        return get_consumption(headers)
-    elif intent_name == "StatusIntent":
-        return get_status(headers)
+        return get_consumption_response(headers)
     elif intent_name == "AMAZON.HelpIntent":
         return get_help()
     elif intent_name == "AMAZON.CancelIntent":
