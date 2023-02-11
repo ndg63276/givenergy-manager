@@ -61,5 +61,5 @@ if __name__ == "__main__":
         headers = get_headers(givenergy_key)
         if datetime.now().minute in times_to_check_errors:
                 check_for_errors(headers)
-        if int(datetime.strftime(datetime.now(), "%H%M")) == time_to_set_max_charge:
+        if datetime.strftime(datetime.now(), "%H:%M") == str(time_to_set_max_charge):
                 set_max_charge(headers)
