@@ -1,0 +1,67 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "give energy",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "BatteryIntent",
+                    "slots": [],
+                    "samples": [
+                        "how's my battery",
+                        "is my battery full",
+                        "how full is my battery"
+                    ]
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.FallbackIntent",
+                    "samples": []
+                },
+                {
+                    "name": "GridVoltageIntent",
+                    "slots": [],
+                    "samples": [
+                        "What's the grid voltage",
+                        "What is the grid voltage"
+                    ]
+                },
+                {
+                    "name": "SolarGenerationIntent",
+                    "slots": [],
+                    "samples": [
+                        "How much solar power is there",
+                        "How much solar power am I generating",
+                        "How much solar is there",
+                        "How much electricity am I generating",
+                        "How much solar am I generating"
+                    ]
+                },
+                {
+                    "name": "ConsumptionIntent",
+                    "slots": [],
+                    "samples": [
+                        "How much power is being used",
+                        "How much electricity am I using",
+                        "How much power am I using"
+                    ]
+                }
+            ],
+            "types": []
+        }
+    }
+}
