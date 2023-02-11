@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 from PyP100 import PyP100
 from user_input import tapo_ip, tapo_username, tapo_password
 
