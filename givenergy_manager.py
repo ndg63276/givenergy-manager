@@ -49,8 +49,7 @@ def set_max_charge(headers):
     return "Tomorrow's solar estimate is "+str(tomorrows_estimate)+"kWh, so have set AC charging to "+str(reqd_ac_charge)+"%.\n"
 
 
-def tapo_charge_if_battery_full(headers):
-    action_message = ""
+def is_battery_full_enough(headers):
     today = datetime.strftime(datetime.now(), "%Y%m%d")
     reqd_battery_level = 100
     for time_and_level in battery_full_levels:
@@ -58,21 +57,25 @@ def tapo_charge_if_battery_full(headers):
         if datetime.now() > start_time:
              reqd_battery_level = time_and_level[1]
     battery_level = get_battery_level(headers)
-    body = "GivEnergy battery at "+str(battery_level)+"%\n"
-    body += "Required battery is "+str(reqd_battery_level)+"%\n"
-    if battery_level > reqd_battery_level + 5:  # hysteresis
-        p100 = getTapoPlug()
-        if not tapoPlugIsOn(p100):
-            action_message = "So turning on tapo plug.\n"
-            switchTapoPlug(p100, True)
+    body = "GivEnergy battery at "+str(battery_level)+"%, "
+    body += "required battery is "+str(reqd_battery_level)+"%\n"
+    if battery_level >= reqd_battery_level + 5:  # hysteresis
+        return True, body
     elif battery_level < reqd_battery_level:
-        p100 = getTapoPlug()
-        if tapoPlugIsOn(p100):
-            action_message = "So turning off tapo.\n"
-            switchTapoPlug(p100, False)
-    if action_message != "":
-        return body + action_message
-    return ""
+        return False, body
+    return None, body
+
+
+def switch_tapo(value):
+    p100 = getTapoPlug()
+    action_message = ""
+    if value == True and not tapoPlugIsOn(p100):
+        action_message = "So turning on Tapo device.\n"
+        switchTapoPlug(p100, True)
+    elif value == False and tapoPlugIsOn(p100):
+        action_message = "So turning off Tapo device.\n"
+        switchTapoPlug(p100, False)
+    return action_message
 
 
 if __name__ == "__main__":
@@ -82,7 +85,11 @@ if __name__ == "__main__":
     if datetime.strftime(datetime.now(), "%H:%M") == str(time_to_set_max_charge):
         body += set_max_charge(headers)
     if tapo_enable_if_battery_full:
-        body += tapo_charge_if_battery_full(headers)
+        battery_full_enough, msg = is_battery_full_enough(headers)
+        if battery_full_enough is not None:
+            msg2 = switch_tapo(battery_full_enough)
+            if msg2 != "":
+                body += msg + msg2
     if datetime.now().minute in times_to_check_errors:
         body += check_for_errors(headers)
     if body != "":
