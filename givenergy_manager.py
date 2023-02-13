@@ -16,34 +16,27 @@ def check_for_errors(headers):
     grid voltage is not abnormally high, then
     reboot the inverter.
     """
-    subject = "GivEnergy error checking"
     inverter_status = get_inverter_status(headers)
     if inverter_status in ["UNKNOWN", "LOST"]:
         sleep(60)
         inverter_status = get_inverter_status(headers)
         if inverter_status in ["UNKNOWN", "LOST"]:
-            body = "Error: GivEnergy inverter status is " + inverter_status
-            send_email(subject, body)
-            return
+            return "Error: GivEnergy inverter status is " + inverter_status + "\n."
 
     if inverter_status == "ERROR":
         grid_voltage = get_grid_voltage(headers)
         if type(grid_voltage) == float and grid_voltage > 252:
-            body = "Error: GivEnergy inverter status is ERROR, but grid voltage is at "+str(grid_voltage)+" volts, so no action taken."
-            send_email(subject, body)
-            return
+            return "Error: GivEnergy inverter status is ERROR, but grid voltage is at "+str(grid_voltage)+" volts, so no action taken.\n"
         sleep(900)
         inverter_status = get_inverter_status(headers)
         if inverter_status == "ERROR":
             grid_voltage = get_grid_voltage(headers)
             if type(grid_voltage) == float and grid_voltage > 252:
-                body = "Error: GivEnergy inverter status is ERROR, but grid voltage is at "+str(grid_voltage)+" volts, so no action taken."
-                send_email(subject, body)
-                return
-            body = "Error: GivEnergy inverter status has been ERROR for 15 mins, so rebooting the inverter..."
+                return "Error: GivEnergy inverter status is ERROR, but grid voltage is at "+str(grid_voltage)+" volts, so no action taken.\n"
+            body = "Error: GivEnergy inverter status has been ERROR for 15 mins, so rebooting the inverter...\n"
             body += restart_inverter(headers)
-            send_email(subject, body)
-            return
+            return body
+    return ""
 
 
 def set_max_charge(headers):
@@ -53,9 +46,7 @@ def set_max_charge(headers):
     percentage_difference_per_kwh = (not_sunny_day_charge - very_sunny_day_charge) / (very_sunny_day - not_sunny_day)  # eg (100-70)/(20-10) = 3
     reqd_ac_charge = int(not_sunny_day_charge - ranged_tomorrows_estimate * percentage_difference_per_kwh)  # reqd charge between eg 70% and 100%
     set_AC_charge_limit(headers, reqd_ac_charge)
-    subject = "GivEnergy maximum charge set"
-    body = "Tomorrow's solar estimate is "+str(tomorrows_estimate)+"kWh, so have set AC charging to "+str(reqd_ac_charge)+"%."
-    send_email(subject, body)
+    return "Tomorrow's solar estimate is "+str(tomorrows_estimate)+"kWh, so have set AC charging to "+str(reqd_ac_charge)+"%.\n"
 
 
 def tapo_charge_if_battery_full(headers):
@@ -72,22 +63,27 @@ def tapo_charge_if_battery_full(headers):
     if battery_level > reqd_battery_level + 5:  # hysteresis
         p100 = getTapoPlug()
         if not tapoPlugIsOn(p100):
-            action_message = "So turning on tapo plug"
+            action_message = "So turning on tapo plug.\n"
             switchTapoPlug(p100, True)
     elif battery_level < reqd_battery_level:
         p100 = getTapoPlug()
         if tapoPlugIsOn(p100):
-            action_message = "So turning off tapo"
+            action_message = "So turning off tapo.\n"
             switchTapoPlug(p100, False)
     if action_message != "":
-        send_email("Switching tapo plug", body + action_message)
+        return body + action_message
+    return ""
 
 
 if __name__ == "__main__":
+    subject = "GivEnergy Manager"
+    body = ""
     headers = get_headers(givenergy_key)
-    if datetime.now().minute in times_to_check_errors:
-        check_for_errors(headers)
     if datetime.strftime(datetime.now(), "%H:%M") == str(time_to_set_max_charge):
-        set_max_charge(headers)
+        body += set_max_charge(headers)
     if tapo_enable_if_battery_full:
-        tapo_charge_if_battery_full(headers)
+        body += tapo_charge_if_battery_full(headers)
+    if datetime.now().minute in times_to_check_errors:
+        body += check_for_errors(headers)
+    if body != "":
+        send_email(subject, body)
