@@ -40,7 +40,7 @@ def check_for_errors(headers):
 
 
 def set_max_charge(headers):
-    tomorrows_estimate = get_tomorrows_forecast_total(solcast_key, solcast_site)
+    tomorrows_estimate = round(get_tomorrows_forecast_total(solcast_key, solcast_site), 2)
     maxmin_tomorrows_estimate = max(min(very_sunny_day, tomorrows_estimate), not_sunny_day)  # ensure estimate is between eg 10 and 20 kWh
     ranged_tomorrows_estimate = maxmin_tomorrows_estimate - not_sunny_day  # ensure between 0 and eg 10
     percentage_difference_per_kwh = (not_sunny_day_charge - very_sunny_day_charge) / (very_sunny_day - not_sunny_day)  # eg (100-70)/(20-10) = 3
