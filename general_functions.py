@@ -13,6 +13,9 @@ def get_headers(apikey):
 
 
 def send_email(subject, body):
+    if email_address == "":
+        print(body)
+        return
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = email_address
