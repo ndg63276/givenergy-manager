@@ -16,10 +16,22 @@ time_to_set_max_charge = "20:00"  # 24hr clock representation of the time to set
 
 times_to_check_errors = [2,32]  # minutes past the hour to check for errors
 
-tapo_enable_if_battery_full = False  # set True to turn on a tapo smart plug when battery gets full
+# Clock times must be in order
+# eg ["09:00", 90] means turn on something if after 9am until battery < 90% full
+# set 100 to not turn on
 battery_full_levels = [
     ["00:00", 100],
+    ["12:00", 50],
+    ["12:30", 100],
 ]
+
+tapo_enable_if_battery_full = False  # set True to turn on a tapo smart plug when battery gets full
 tapo_ip = ""  # Tapo plug has to be on the local network, set the IP here
 tapo_username = ""  # Tapo login details
 tapo_password = ""
+
+smartlife_enable_if_battery_full = False
+smartlife_username = "" # Smartlife login details
+smartlife_password = ""
+smartlife_region = "" # US, EU or CN
+smartlife_device_name = "" # Exact name of Smartlife device to turn on/off

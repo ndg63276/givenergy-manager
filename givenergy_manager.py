@@ -5,6 +5,7 @@ from datetime import datetime
 from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit, get_battery_level
 from solcast_functions import get_tomorrows_forecast_total
 from tapo_functions import switch_tapo_device
+from smartlife_functions import switch_smartlife_device
 from general_functions import get_headers, send_email
 from user_input import *
 
@@ -76,18 +77,31 @@ def switch_tapo(value):
     return action_message
 
 
+def switch_smartlife(value):
+    action_message = ""
+    device_switched = switch_smartlife_device(value)
+    if device_switched and value == True:
+        action_message = "So turning on Smartlife device.\n"
+    elif device_switched and value == False:
+        action_message = "So turning off Smartlife device.\n"
+    return action_message
+
+
 if __name__ == "__main__":
     subject = "GivEnergy Manager"
     body = ""
     headers = get_headers(givenergy_key)
     if datetime.strftime(datetime.now(), "%H:%M") == str(time_to_set_max_charge):
         body += set_max_charge(headers)
-    if tapo_enable_if_battery_full:
-        battery_full_enough, msg = is_battery_full_enough(headers)
-        if battery_full_enough is not None:
-            msg2 = switch_tapo(battery_full_enough)
-            if msg2 != "":
-                body += msg + msg2
+    battery_full_enough, msg = is_battery_full_enough(headers)
+    if tapo_enable_if_battery_full and battery_full_enough is not None:
+        msg2 = switch_tapo(battery_full_enough)
+        if msg2 != "":
+            body += msg + msg2
+    if smartlife_enable_if_battery_full and battery_full_enough is not None:
+        msg2 = switch_smartlife(battery_full_enough)
+        if msg2 != "":
+            body += msg + msg2
     if datetime.now().minute in times_to_check_errors:
         body += check_for_errors(headers)
     if body != "":
