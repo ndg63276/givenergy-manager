@@ -22,8 +22,7 @@ This repo has some utilities for GivEnergy batteries/inverters. It has 3 main fu
 * not_sunny_day_charge - charge to this percentage for any not sunny day, usually 100 (percent)
 * time_to_set_max_charge - the time you want to set the charge percentage for tomorrow. Needs to be before midnight, and before your cheap import rate starts. Format is eg "21:00"
 * times_to_check_errors - a list of times per hour to check the inverter for errors. Recommend [0,30] to check every half hour, or [] to disable error checking.
-* tapo_enable_if_battery_full - set True or False to enable/disable the Tapo switching. True requires the Tapo library from https://github.com/fishbigger/TapoP100 to be installed
-* battery_full_levels - a list of pairs of times and battery percentages for controlling a Tapo smart plug. eg
+* battery_full_levels - a list of pairs of times and battery percentages for controlling a Tapo or Smartlife smart plug. eg
 ```
 battery_full_levels = [
     ["01:30", 10],
@@ -33,10 +32,16 @@ battery_full_levels = [
 ]
 ```
 This might correspond to 4 hours of cheap electricity from 01:30 to 05:30, so keep the battery level above 10% for that time (probably while charging the battery)
-Between 9am and 6pm keep the battery level high, but if it gets above 85%, turn on the Tapo plug to avoid exporting if possible. (There is a 5% buffer, so will actually only turn on at 90%)
+Between 9am and 6pm keep the battery level high, but if it gets above 85%, turn on the smart plug to avoid exporting if possible. (There is a 5% buffer, so will actually only turn on at 90%)
+* tapo_enable_if_battery_full - set True or False to enable/disable the Tapo switching. True requires the Tapo library from https://github.com/fishbigger/TapoP100 to be installed
 * tapo_ip - local IP address of the Tapo plug
 * tapo_username - your Tapo username
 * tapo_password - your Tapo password
+* smartlife_enable_if_battery_full - set True or False to enable/disable the Smartlife switching.
+* smartlife_username - your Smartlife username
+* smartlife_password - your Smartlife password
+* smartlife_region - your Smartlife region, either US, EU or CN
+* smartlife_device_name - the xxact name of Smartlife device to turn on/off
 
 ### Alexa Skill
 GivEnergy has it's own official Alexa skill, but if you want to deploy your own, you can do using the included interaction model. Upload that to the JSON editor in the Amazon developer console. Then upload all the files to AWS Lambda, and the skill will use the lambda_function.py file.
