@@ -3,7 +3,7 @@
 This repo has some utilities for GivEnergy batteries/inverters. It has 3 main functions:
 * Checking the inverter for errors, if the inverter is in an error state for 15 mins, it is rebooted.
 * Getting the solar forecast from solcast, and setting the AC charge level appropriately (eg if tomorrow will be sunny, there's no need to charge to 100% tonight)
-* Turning on a Tapo smart plug if the battery is full enough, to eg charge an electric car, run a heater etc
+* Turning on a Tapo or Smartlife smart plug if the battery is full enough, to eg charge an electric car, run a heater etc
 
 ### Instructions
 1) Clone this repo
@@ -42,6 +42,14 @@ Between 9am and 6pm keep the battery level high, but if it gets above 85%, turn 
 * smartlife_password - your Smartlife password
 * smartlife_region - your Smartlife region, either US, EU or CN
 * smartlife_device_name - the xxact name of Smartlife device to turn on/off
+
+### GivEnergy Smart plugs
+GivEnergy smart plugs are just rebadged Smartlife plugs, so if you want to switch them based on your battery level, you can! But you will lose the ability to control them from the GivEnergy app. Simply download the Smartlife app if you haven't already, then:
+* Press the + button in the Smartlife app and select Add Device
+* Choose "Socket (Wi-Fi)" from the list
+* Put in your wifi details
+* Follow the instructions in the app
+
 
 ### Alexa Skill
 GivEnergy has it's own official Alexa skill, but if you want to deploy your own, you can do using the included interaction model. Upload that to the JSON editor in the Amazon developer console. Then upload all the files to AWS Lambda, and the skill will use the lambda_function.py file.
