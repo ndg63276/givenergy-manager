@@ -2,7 +2,6 @@ import os
 import requests
 import json
 from datetime import datetime, timedelta
-from user_input import smartlife_username, smartlife_password, smartlife_region, smartlife_device_name
 tokens_file = "smartlife_tokens.json"
 regions = {
     "eu": "44",
@@ -33,10 +32,10 @@ def get_base_url(region):
     return "https://px1.tuyacn.com/homeassistant/"
 
 
-def login():
-    username = smartlife_username
-    password = smartlife_password
-    region = regions[str(smartlife_region).lower()]
+def login(device):
+    username = device["username"]
+    password = device["password"]
+    region = regions[str(device["region"]).lower()]
     base_url = get_base_url(region)
     url = base_url + "auth.do"
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -176,15 +175,15 @@ def update_device_status(j, device_id, value):
     write_tokens(j)
 
 
-def switch_smartlife_device(turn_on):
+def switch_smartlife_device(device, turn_on):
     if not check_login():
-        j = login()
+        j = login(device)
         if j is None:
             return False
     else:
         j = read_tokens()
         j["devices"] = do_discovery(True)
-    device_id = get_device_id(j["devices"], smartlife_device_name)
+    device_id = get_device_id(j["devices"], device["device_name"])
     if device_id is None:
         return False
     device_on = is_device_on(j, device_id)

@@ -22,9 +22,18 @@ This repo has some utilities for GivEnergy batteries/inverters. It has 3 main fu
 * not_sunny_day_charge - charge to this percentage for any not sunny day, usually 100 (percent)
 * time_to_set_max_charge - the time you want to set the charge percentage for tomorrow. Needs to be before midnight, and before your cheap import rate starts. Format is eg "21:00"
 * times_to_check_errors - a list of times per hour to check the inverter for errors. Recommend [0,30] to check every half hour, or [] to disable error checking.
-* battery_full_levels - a list of pairs of times and battery percentages for controlling a Tapo or Smartlife smart plug. eg
+* devices - a list of dictionaries, of the devices you want the GivEnergy Manager to turn on/off based on battery level. Each device needs these keys:
+  * name - a friendly name to use in GivEnergy Manager
+  * control_enabled - set True/False if you want GivEnergy manager to control the device or not
+  * type - either "tapo" or "smartlife"
+  * username - your login to the Tapo or Smartlife apps
+  * password - your password to the Tapo or Smartlife apps
+  * ip - Tapo only - the (local) IP address of the Tapo device you wanr to control, you can find this in the Tapo app
+  * region - Smartlife only - your region, EU, US or CN
+  * device_name - Smartlife only - the name the device has in the Smartlife app
+  * battery_full_levels - a list of pairs of times and battery percentages for controlling a Tapo or Smartlife smart plug. eg
 ```
-battery_full_levels = [
+"battery_full_levels": [
     ["01:30", 10],
     ["05:30", 50],
     ["09:00", 85],
@@ -33,15 +42,6 @@ battery_full_levels = [
 ```
 This might correspond to 4 hours of cheap electricity from 01:30 to 05:30, so keep the battery level above 10% for that time (probably while charging the battery)
 Between 9am and 6pm keep the battery level high, but if it gets above 85%, turn on the smart plug to avoid exporting if possible. (There is a 5% buffer, so will actually only turn on at 90%)
-* tapo_enable_if_battery_full - set True or False to enable/disable the Tapo switching. True requires the Tapo library from https://github.com/fishbigger/TapoP100 to be installed
-* tapo_ip - local IP address of the Tapo plug
-* tapo_username - your Tapo username
-* tapo_password - your Tapo password
-* smartlife_enable_if_battery_full - set True or False to enable/disable the Smartlife switching.
-* smartlife_username - your Smartlife username
-* smartlife_password - your Smartlife password
-* smartlife_region - your Smartlife region, either US, EU or CN
-* smartlife_device_name - the xxact name of Smartlife device to turn on/off
 
 ### GivEnergy Smart plugs
 GivEnergy smart plugs are just rebadged Smartlife plugs, so if you want to switch them based on your battery level, you can! But you will lose the ability to control them from the GivEnergy app. Simply download the Smartlife app if you haven't already, then:

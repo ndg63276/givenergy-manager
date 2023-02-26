@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 
+import sys
 from time import sleep
 from datetime import datetime
 from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit, get_battery_level
 from solcast_functions import get_tomorrows_forecast_total
-from tapo_functions import switch_tapo_device
+from tapo_functions import switch_tapo_device, get_tapo_device
 from smartlife_functions import switch_smartlife_device
 from general_functions import get_headers, send_email
 from user_input import *
@@ -50,14 +51,13 @@ def set_max_charge(headers):
 	return "Tomorrow's solar estimate is "+str(tomorrows_estimate)+"kWh, so have set AC charging to "+str(reqd_ac_charge)+"%.\n"
 
 
-def is_battery_full_enough(headers):
+def is_battery_full_enough(battery_level, device_levels):
 	today = datetime.strftime(datetime.now(), "%Y%m%d")
 	reqd_battery_level = 100
-	for time_and_level in battery_full_levels:
+	for time_and_level in device_levels:
 		start_time = datetime.strptime(today+time_and_level[0], "%Y%m%d%H:%M")
 		if datetime.now() > start_time:
 			 reqd_battery_level = time_and_level[1]
-	battery_level = get_battery_level(headers)
 	body = "GivEnergy battery at "+str(battery_level)+"%, "
 	body += "required battery is "+str(reqd_battery_level)+"%\n"
 	if battery_level >= reqd_battery_level + 5:  # hysteresis
@@ -67,41 +67,51 @@ def is_battery_full_enough(headers):
 	return None, body
 
 
-def switch_tapo(value):
+def switch_tapo(device, value):
 	action_message = ""
-	device_switched = switch_tapo_device(value)
+	device_switched = switch_tapo_device(device, value)
 	if device_switched and value == True:
-		action_message = "So turning on Tapo device.\n"
+		action_message = "So turning on " + device["name"] + ".\n"
 	elif device_switched and value == False:
-		action_message = "So turning off Tapo device.\n"
+		action_message = "So turning off " + device["name"] + ".\n"
 	return action_message
 
 
-def switch_smartlife(value):
+def switch_smartlife(device, value):
 	action_message = ""
-	device_switched = switch_smartlife_device(value)
+	device_switched = switch_smartlife_device(device, value)
 	if device_switched and value == True:
-		action_message = "So turning on Smartlife device.\n"
+		action_message = "So turning on " + device["name"] + ".\n"
 	elif device_switched and value == False:
-		action_message = "So turning off Smartlife device.\n"
+		action_message = "So turning off " + device["name"] + ".\n"
 	return action_message
+
+
+def switch_device(device, value, msg):
+	msg2 = ""
+	if "type" in device and device["type"] == "tapo":
+		msg2 = switch_tapo(device, battery_full_enough)
+	elif "type" in device and device["type"] == "smartlife":
+		msg2 = switch_smartlife(device, battery_full_enough)
+	if msg2 != "":
+		msg2 = msg + msg2
+	return msg2
+
 
 
 if __name__ == "__main__":
 	subject = "GivEnergy Manager"
 	body = ""
 	headers = get_headers(givenergy_key)
+	battery_level = get_battery_level(headers)
+	for device in devices:
+		if "control_enabled" not in device or device["control_enabled"] == False:
+			continue
+		battery_full_enough, msg = is_battery_full_enough(battery_level, device["battery_full_levels"])
+		if battery_full_enough is not None:
+			body += switch_device(device, battery_full_enough, msg)
 	if datetime.strftime(datetime.now(), "%H:%M") == str(time_to_set_max_charge):
 		body += set_max_charge(headers)
-	battery_full_enough, msg = is_battery_full_enough(headers)
-	if tapo_enable_if_battery_full and battery_full_enough is not None:
-		msg2 = switch_tapo(battery_full_enough)
-		if msg2 != "":
-			body += msg + msg2
-	if smartlife_enable_if_battery_full and battery_full_enough is not None:
-		msg2 = switch_smartlife(battery_full_enough)
-		if msg2 != "":
-			body += msg + msg2
 	if datetime.now().minute in times_to_check_errors:
 		body += check_for_errors(headers)
 	if body != "":
