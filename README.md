@@ -8,7 +8,7 @@ This repo has some utilities for GivEnergy batteries/inverters. It has 3 main fu
 ### Instructions
 1) Clone this repo
 2) Copy example_user_input.py to user_input.py (see below for more info)
-3) Run a cron job every minute for givenergy_manager.py
+3) Run a cron job every minute for givenergy_manager.py. Alternatively, run from the command line with the option --forever.
 
 ### user_input.py
 * givenergy_key - this is the API key you get from https://givenergy.cloud/account-settings/security

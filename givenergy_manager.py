@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys
+import argparse
 from time import sleep
 from datetime import datetime
 from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit, get_battery_level
@@ -90,16 +90,15 @@ def switch_smartlife(device, value):
 def switch_device(device, value, msg):
 	msg2 = ""
 	if "type" in device and device["type"] == "tapo":
-		msg2 = switch_tapo(device, battery_full_enough)
+		msg2 = switch_tapo(device, value)
 	elif "type" in device and device["type"] == "smartlife":
-		msg2 = switch_smartlife(device, battery_full_enough)
+		msg2 = switch_smartlife(device, value)
 	if msg2 != "":
 		msg2 = msg + msg2
 	return msg2
 
 
-
-if __name__ == "__main__":
+def main():
 	subject = "GivEnergy Manager"
 	body = ""
 	headers = get_headers(givenergy_key)
@@ -116,3 +115,18 @@ if __name__ == "__main__":
 		body += check_for_errors(headers)
 	if body != "":
 		send_email(subject, body)
+
+
+if __name__ == "__main__":
+	forever = False
+	delay = 60
+	parser = argparse.ArgumentParser(description="")
+	parser.add_argument("--forever", action="store_true", default=forever)
+	parser.add_argument("--delay", action="store", default=delay)
+	args, unknown = parser.parse_known_args()
+	if args.forever:
+		while True:
+			main()
+			sleep(int(args.delay))
+	else:
+		main()
