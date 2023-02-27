@@ -7,8 +7,7 @@ from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter
 from solcast_functions import get_tomorrows_forecast_total
 from tapo_functions import switch_tapo_device, get_tapo_device
 from smartlife_functions import switch_smartlife_device
-from general_functions import get_headers, send_email
-from user_input import *
+from general_functions import read_json, get_headers, send_email
 
 
 def check_for_errors(headers):
@@ -41,12 +40,12 @@ def check_for_errors(headers):
 	return ""
 
 
-def set_max_charge(headers):
-	tomorrows_estimate = round(get_tomorrows_forecast_total(solcast_key, solcast_site), 2)
-	maxmin_tomorrows_estimate = max(min(very_sunny_day, tomorrows_estimate), not_sunny_day)  # ensure estimate is between eg 10 and 20 kWh
-	ranged_tomorrows_estimate = maxmin_tomorrows_estimate - not_sunny_day  # ensure between 0 and eg 10
-	percentage_difference_per_kwh = (not_sunny_day_charge - very_sunny_day_charge) / (very_sunny_day - not_sunny_day)  # eg (100-70)/(20-10) = 3
-	reqd_ac_charge = int(not_sunny_day_charge - ranged_tomorrows_estimate * percentage_difference_per_kwh)  # reqd charge between eg 70% and 100%
+def set_max_charge(headers, j):
+	tomorrows_estimate = round(get_tomorrows_forecast_total(j["solcast_key"], j["solcast_site"]), 2)
+	maxmin_tomorrows_estimate = max(min(j["very_sunny_day"], tomorrows_estimate), j["not_sunny_day"])  # ensure estimate is between eg 10 and 20 kWh
+	ranged_tomorrows_estimate = maxmin_tomorrows_estimate - j["not_sunny_day"]  # ensure between 0 and eg 10
+	percentage_difference_per_kwh = (j["not_sunny_day_charge"] - j["very_sunny_day_charge"]) / (j["very_sunny_day"] - j["not_sunny_day"])  # eg (100-70)/(20-10) = 3
+	reqd_ac_charge = int(j["not_sunny_day_charge"] - ranged_tomorrows_estimate * percentage_difference_per_kwh)  # reqd charge between eg 70% and 100%
 	set_AC_charge_limit(headers, reqd_ac_charge)
 	return "Tomorrow's solar estimate is "+str(tomorrows_estimate)+"kWh, so have set AC charging to "+str(reqd_ac_charge)+"%.\n"
 
@@ -101,17 +100,18 @@ def switch_device(device, value, msg):
 def main():
 	subject = "GivEnergy Manager"
 	body = ""
-	headers = get_headers(givenergy_key)
+	j = read_json()
+	headers = get_headers(j["givenergy_key"])
 	battery_level = get_battery_level(headers)
-	for device in devices:
+	for device in j["devices"]:
 		if "control_enabled" not in device or device["control_enabled"] == False:
 			continue
 		battery_full_enough, msg = is_battery_full_enough(battery_level, device["battery_full_levels"])
 		if battery_full_enough is not None:
 			body += switch_device(device, battery_full_enough, msg)
-	if datetime.strftime(datetime.now(), "%H:%M") == str(time_to_set_max_charge):
-		body += set_max_charge(headers)
-	if datetime.now().minute in times_to_check_errors:
+	if datetime.strftime(datetime.now(), "%H:%M") == j["time_to_set_max_charge"]:
+		body += set_max_charge(headers, j)
+	if datetime.now().minute in j["times_to_check_errors"]:
 		body += check_for_errors(headers)
 	if body != "":
 		send_email(subject, body)

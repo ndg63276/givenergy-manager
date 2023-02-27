@@ -1,6 +1,12 @@
+import json
 import smtplib
 from email.mime.text import MIMEText
-from user_input import email_address, email_password
+
+
+def read_json():
+    with open("user_input.json", "r") as f:
+        j = json.load(f)
+    return j
 
 
 def get_headers(apikey):
@@ -13,14 +19,15 @@ def get_headers(apikey):
 
 
 def send_email(subject, body):
-    if email_address == "":
+    j = read_json()
+    if j["email_address"] == "":
         print(body)
         return
     msg = MIMEText(body)
     msg['Subject'] = subject
-    msg['From'] = email_address
-    msg['To'] = email_address
+    msg['From'] = j["email_address"]
+    msg['To'] = j["email_address"]
     smtp_server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-    smtp_server.login(email_address, email_password)
-    smtp_server.sendmail(email_address, email_address, msg.as_string())
+    smtp_server.login(j["email_address"], j["email_password"])
+    smtp_server.sendmail(j["email_address"], j["email_address"], msg.as_string())
     smtp_server.quit()

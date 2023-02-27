@@ -1,0 +1,48 @@
+{
+        "givenergy_key": "",
+
+        "solcast_key": "",
+        "solcast_site": "",
+
+        "email_address": "",
+        "email_password": "",
+
+        "very_sunny_day": 20,
+        "very_sunny_day_charge": 70,
+
+        "not_sunny_day": 10,
+        "not_sunny_day_charge": 100,
+
+        "time_to_set_max_charge": "20:30",
+        "times_to_check_errors": [0,30],
+
+        "devices":  [
+                {
+                        "name": "Car charger",
+                        "control_enabled": false,
+                        "type": "tapo",
+                        "username": "example@mail.com",
+                        "password": "password123",
+                        "ip": "192.168.1.100",
+                        "battery_full_levels": [
+                                ["00:00", 100],
+                                ["12:00", 50],
+                                ["12:30", 100]
+                        ]
+                },
+                {
+                        "name": "Heater",
+                        "control_enabled": false,
+                        "type": "smartlife",
+                        "username": "example@mail.com",
+                        "password": "p4ssw0rd",
+                        "region": "EU",
+                        "device_name": "GivEnergy",
+                        "battery_full_levels": [
+                                ["00:00", 100],
+                                ["12:00", 50],
+                                ["12:30", 100]
+                        ]
+                }
+        ]
+}
