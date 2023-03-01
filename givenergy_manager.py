@@ -5,8 +5,6 @@ from time import sleep
 from datetime import datetime
 from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit, get_battery_level
 from solcast_functions import get_tomorrows_forecast_total
-from tapo_functions import switch_tapo_device, get_tapo_device
-from smartlife_functions import switch_smartlife_device
 from general_functions import read_json, get_headers, send_email
 
 
@@ -67,6 +65,7 @@ def is_battery_full_enough(battery_level, device_levels):
 
 
 def switch_tapo(device, value):
+	from tapo_functions import switch_tapo_device
 	action_message = ""
 	device_switched = switch_tapo_device(device, value)
 	if device_switched and value == True:
@@ -77,6 +76,7 @@ def switch_tapo(device, value):
 
 
 def switch_smartlife(device, value):
+	from smartlife_functions import switch_smartlife_device
 	action_message = ""
 	device_switched = switch_smartlife_device(device, value)
 	if device_switched and value == True:
