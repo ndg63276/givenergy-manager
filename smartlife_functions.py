@@ -2,7 +2,7 @@ import os
 import requests
 import json
 from datetime import datetime, timedelta
-tokens_file = "smartlife_tokens.json"
+tokens_file = os.path.join(os.path.dirname(__file__), "smartlife_tokens.json")
 regions = {
     "eu": "44",
     "44": "44",
