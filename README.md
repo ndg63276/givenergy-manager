@@ -2,7 +2,7 @@
 
 This repo has some utilities for GivEnergy batteries/inverters. It has 3 main functions:
 * Checking the inverter for errors, if the inverter is in an error state for 15 mins, it is rebooted.
-* Getting the solar forecast from solcast, and setting the AC charge level appropriately (eg if tomorrow will be sunny, there's no need to charge to 100% tonight)
+* Getting the solar forecast from Solcast, and setting the AC charge level appropriately (eg if tomorrow will be sunny, there's no need to charge to 100% tonight)
 * Turning on a Tapo or Smartlife smart plug if the battery is full enough, to eg charge an electric car, run a heater etc
 
 ### Instructions
@@ -12,15 +12,17 @@ This repo has some utilities for GivEnergy batteries/inverters. It has 3 main fu
 
 ### user_input.json
 * givenergy_key - this is the API key you get from https://givenergy.cloud/account-settings/security
-* solcast_key - this is the API key you get from https://toolkit.solcast.com.au/account
-* solcast_site - this is the Resource Id your address is given by solcast
 * email_address - this is a gmail address you can use to email yourself notifications when the manager does something
 * email_password - you need a gmail app password here, not your google password, see https://myaccount.google.com/apppasswords
+* set_max_charge_enabled - Enable or disable the feature to set the overnight charging percentage based on a Solcast forecast
+* time_to_set_max_charge - the time you want to set the charge percentage for tomorrow. Needs to be before midnight, and before your cheap import rate starts. Format is eg "21:00"
+* solcast_key - this is the API key you get from https://toolkit.solcast.com.au/account
+* solcast_site - this is the Resource Id your address is given by Solcast, get it from https://toolkit.solcast.com.au/rooftop-sites
 * very_sunny_day - how many kWh (or above) for tomorrows forecast for you to consider it very sunny
 * very_sunny_day_charge - how high a percentage you want your battery to charge to if tomorrow is very sunny
 * not_sunny_day - anything below this (in kWh) is considered not sunny
 * not_sunny_day_charge - charge to this percentage for any not sunny day, usually 100 (percent)
-* time_to_set_max_charge - the time you want to set the charge percentage for tomorrow. Needs to be before midnight, and before your cheap import rate starts. Format is eg "21:00"
+* error_checking_enabled - Enable or disable the feature to check the inverter for errors and reboot if necessary
 * times_to_check_errors - a list of times per hour to check the inverter for errors. Recommend [0,30] to check every half hour, or [] to disable error checking.
 * devices - a list of dictionaries, of the devices you want the GivEnergy Manager to turn on/off based on battery level. Each device needs these keys:
   * name - a friendly name to use in GivEnergy Manager

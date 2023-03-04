@@ -109,9 +109,9 @@ def main():
 		battery_full_enough, msg = is_battery_full_enough(battery_level, device["battery_full_levels"])
 		if battery_full_enough is not None:
 			body += switch_device(device, battery_full_enough, msg)
-	if datetime.strftime(datetime.now(), "%H:%M") == j["time_to_set_max_charge"]:
+	if j["set_max_charge_enabled"] is True and datetime.strftime(datetime.now(), "%H:%M") == j["time_to_set_max_charge"]:
 		body += set_max_charge(headers, j)
-	if datetime.now().minute in j["times_to_check_errors"]:
+	if j["error_checking_enabled"] is True and datetime.now().minute in j["times_to_check_errors"]:
 		body += check_for_errors(headers)
 	if body != "":
 		send_email(subject, body)

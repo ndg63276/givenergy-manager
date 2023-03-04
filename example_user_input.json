@@ -1,11 +1,13 @@
 {
         "givenergy_key": "",
 
-        "solcast_key": "",
-        "solcast_site": "",
-
         "email_address": "",
         "email_password": "",
+
+        "set_max_charge_enabled": false,
+        "time_to_set_max_charge": "20:30",
+        "solcast_key": "",
+        "solcast_site": "",
 
         "very_sunny_day": 20,
         "very_sunny_day_charge": 70,
@@ -13,7 +15,7 @@
         "not_sunny_day": 10,
         "not_sunny_day_charge": 100,
 
-        "time_to_set_max_charge": "20:30",
+        "error_checking_enabled": false,
         "times_to_check_errors": [0,30],
 
         "devices":  [
