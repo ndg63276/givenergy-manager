@@ -3,7 +3,7 @@
 import argparse
 from time import sleep
 from datetime import datetime
-from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit, get_battery_level
+from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit, get_AC_charge_limit, get_battery_level
 from solcast_functions import get_tomorrows_forecast_total
 from general_functions import read_json, get_headers, send_email
 
@@ -44,8 +44,19 @@ def set_max_charge(headers, j):
 	ranged_tomorrows_estimate = maxmin_tomorrows_estimate - j["not_sunny_day"]  # ensure between 0 and eg 10
 	percentage_difference_per_kwh = (j["not_sunny_day_charge"] - j["very_sunny_day_charge"]) / (j["very_sunny_day"] - j["not_sunny_day"])  # eg (100-70)/(20-10) = 3
 	reqd_ac_charge = int(j["not_sunny_day_charge"] - ranged_tomorrows_estimate * percentage_difference_per_kwh)  # reqd charge between eg 70% and 100%
-	set_AC_charge_limit(headers, reqd_ac_charge)
-	return "Tomorrow's solar estimate is "+str(tomorrows_estimate)+"kWh, so have set AC charging to "+str(reqd_ac_charge)+"%.\n"
+	output = "Tomorrow's solar estimate is "+str(tomorrows_estimate)+"kWh, so have set AC charging to "+str(reqd_ac_charge)+"%.\n"
+	attempts = 5
+	for i in range(attempts):
+		set_AC_charge_limit(headers, reqd_ac_charge)
+		sleep(10)
+		if get_AC_charge_limit(headers) == reqd_ac_charge:
+			break
+		sleep(5)
+		if i < attempts-1:
+			output += "Failed to set max charge, retrying...\n"
+		else:
+			output += "Failed to set max charge.\n"
+	return output
 
 
 def is_battery_full_enough(battery_level, device_levels):
