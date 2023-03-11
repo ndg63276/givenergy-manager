@@ -97,7 +97,7 @@ def switch_device(device, value, msg):
 	return msg2
 
 
-def main():
+def main(args):
 	subject = "GivEnergy Manager"
 	body = ""
 	j = read_json()
@@ -109,9 +109,13 @@ def main():
 		battery_full_enough, msg = is_battery_full_enough(battery_level, device["battery_full_levels"])
 		if battery_full_enough is not None:
 			body += switch_device(device, battery_full_enough, msg)
-	if j["set_max_charge_enabled"] is True and datetime.strftime(datetime.now(), "%H:%M") == j["time_to_set_max_charge"]:
+	if args.forcemaxcharge or (
+			j["set_max_charge_enabled"] is True and
+			datetime.strftime(datetime.now(), "%H:%M") == j["time_to_set_max_charge"]):
 		body += set_max_charge(headers, j)
-	if j["error_checking_enabled"] is True and datetime.now().minute in j["times_to_check_errors"]:
+	if args.forceerrorcheck or (
+			j["error_checking_enabled"] is True and
+			datetime.now().minute in j["times_to_check_errors"]):
 		body += check_for_errors(headers)
 	if body != "":
 		send_email(subject, body)
@@ -120,13 +124,17 @@ def main():
 if __name__ == "__main__":
 	forever = False
 	delay = 60
+	forcemaxcharge = False
+	forceerrorcheck = False
 	parser = argparse.ArgumentParser(description="")
 	parser.add_argument("--forever", action="store_true", default=forever)
 	parser.add_argument("--delay", action="store", default=delay)
+	parser.add_argument("--forcemaxcharge", action="store_true", default=forcemaxcharge)
+	parser.add_argument("--forceerrorcheck", action="store_true", default=forceerrorcheck)
 	args, unknown = parser.parse_known_args()
 	if args.forever:
 		while True:
-			main()
+			main(args)
 			sleep(int(args.delay))
 	else:
-		main()
+		main(args)
