@@ -1,0 +1,580 @@
+<html>
+<head>
+<title>GivEnergy Manager Config Editor</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<script src="https://releases.jquery.com/git/jquery-3.x-git.min.js"></script>
+<script>
+
+const deviceTypes = {
+	"tapo": {
+		"text": "Tapo",
+		"fields": [
+			{
+				"name": "username",
+				"text": "Username: ",
+				"type": "",
+			},
+			{
+				"name":	"password",
+				"text": "Password: ",
+				"type": "password",
+			},
+			{
+				"name": "ip",
+				"text": "IP Address: ",
+				"type": "",
+			},
+		]
+	},
+	"smartlife": {
+		"text": "Smartlife ",
+		"fields": [
+			{
+				"name": "username",
+				"text": "Username: ",
+				"type": "",
+			},
+			{
+				"name":	"password",
+				"text": "Password: ",
+				"type": "password",
+			},
+			{
+				"name": "region",
+				"text": "Region: ",
+				"type": "",
+			},
+			{
+				"name": "device_name",
+				"text": "Smartlife Name: ",
+				"type": "",
+			},
+		]
+	},
+}
+
+function writeToFile() {
+	output = generateObjectFromPage();
+	console.log(output);
+	$.ajax({
+		url: "cgi-bin/index.py",
+		type: "POST",
+		data: JSON.stringify(output),
+		dataType: "json",
+		success: function(json) {
+			console.log(json);
+			if ("success" in json && json["success"] == true) {
+				successEl = document.getElementById("success");
+				successEl.innerHTML = "&nbsp; &#10003; Success!";
+				setTimeout(function() {successEl.innerHTML = ""}, 5000);
+			}
+		}
+	})
+}
+
+function generateObjectFromPage() {
+	keys = [
+		{"key": "givenergy_key", "type": "string"},
+		{"key": "email_address", "type": "string"},
+		{"key": "email_password", "type": "string"},
+		{"key": "set_max_charge_enabled", "type": "bool"},
+		{"key": "time_to_set_max_charge", "type": "string"},
+		{"key": "solcast_key", "type": "string"},
+		{"key": "solcast_site", "type": "string"},
+		{"key": "very_sunny_day", "type": "number"},
+		{"key": "very_sunny_day_charge", "type": "number"},
+		{"key": "not_sunny_day", "type": "number"},
+		{"key": "not_sunny_day_charge", "type": "number"},
+		{"key": "error_checking_enabled", "type": "bool"},
+		{"key": "times_to_check_errors", "type": "numlist"},
+	];
+	output = {"devices": []};
+	for (field of keys) {
+		key = field["key"];
+		val = document.getElementById(key).value;
+		if (field["type"] == "bool") {
+			output[key] = Boolean(Number(val));
+		} else if (field["type"] == "number") {
+			output[key] = Number(val);
+		} else if (field["type"] == "numlist") {
+			output[key] = val.split(",").map(Number);
+		} else {
+			output[key] = val;
+		}
+	}
+	var devices = document.getElementsByClassName("device");
+	for (var d = 0; d < devices.length; d++) {
+		device = devices.item(d);
+		i = device.id.split("_")[0];
+		deviceType = document.getElementById(i+"_type").value;
+		dev = {
+			"name": document.getElementById(i+"_name").value,
+			"control_enabled": document.getElementById(i+"_slider").value == 1 ? true : false,
+			"type": deviceType,
+			"battery_full_levels": [],
+		}
+		for (field of deviceTypes[deviceType]["fields"]) {
+			fieldName = field["name"];
+			dev[fieldName] = document.getElementById(i+"_"+fieldName).value;
+		}
+		var batteryRows = document.getElementsByClassName(i+"_time");
+		for (var b = 0; b < batteryRows.length; b++) {
+			batteryRow = batteryRows.item(b);
+			k = batteryRow.id.split("_")[2];
+			time = batteryRow.value;
+			level = document.getElementById(i+"_level_"+k).value;
+			if (time != "" && level != "") {
+				dev["battery_full_levels"].push([time, Number(level)]);
+			}
+		}
+		output["devices"].push(dev);
+	}
+	return output;
+}
+
+function readFromFile() {
+	$.ajax({
+		url: "cgi-bin/index.py",
+		type: "GET",
+		dataType: "json",
+		success: function(json) {
+			console.log(json);
+			populatePage(json);
+		}
+	})
+}
+
+function populatePage(result) {
+	for (key in result) {
+		if (key == "devices") {
+			populateDevices(result[key]);
+		}
+		el = document.getElementById(key);
+		if (el != null) {
+			val = result[key];
+			if (typeof(val) == "boolean") {
+				val = val ? 1 : 0;
+			}
+			document.getElementById(key).value = val;
+		}
+	changeSlider();
+	}
+}
+
+function populateDevices(devices) {
+	devicesElement = document.getElementById("devices");
+	devicesElement.innerHTML = "";
+	for (i in devices) {
+		device = devices[i];
+		populateDevice(device, devicesElement, i);
+		disableDevice(i, device.control_enabled);
+		br = document.createElement("br");
+		br.id = i+"_br";
+		devicesElement.appendChild(br);
+	}
+	addAddButton(i, devicesElement);
+}
+
+function addDevice() {
+	i = this.id.replace("_add", "");
+	this.remove();
+	devicesElement = document.getElementById("devices");
+	deviceType = Object.keys(deviceTypes)[0]
+	device = {
+		"name": "",
+		"control_enabled": true,
+		"type": deviceType,
+		"battery_full_levels": [],
+	}
+	for (field of deviceTypes[deviceType]["fields"]) {
+		fieldName = field["name"];
+		device[fieldName] = "";
+	}
+	populateDevice(device, devicesElement, i);
+	br = document.createElement("br");
+	br.id = i+"_br";
+	devicesElement.appendChild(br);
+	addAddButton(i, devicesElement);
+}
+
+function addAddButton(i, devicesElement) {
+	i++;
+	btn = document.createElement("button");
+	btn.id = i+"_add";
+	btn.innerHTML = "<i class='fa fa-plus blueshadow'></i> &nbsp;Add Device";
+	btn.onclick = addDevice;
+	devicesElement.appendChild(btn);
+}
+
+function createRow(label, val, elementType, idName) {
+	tr = document.createElement("tr");
+	tr.id = "row" + idName;
+	td1 = document.createElement("td");
+	text = document.createTextNode(label);
+	td2 = document.createElement("td");
+	input = document.createElement("input");
+	input.value = val;
+	td3 = document.createElement("td");
+	if (elementType == "password") {
+		input.type = "password";
+	} else if (elementType == "name") {
+		btn = document.createElement("button");
+		btn.innerHTML = "&#10060; Delete device";
+		btn.id = idName.replace("name", "delete");
+		btn.onclick = deleteDevice;
+		td3.appendChild(btn);
+	} else if (elementType == "slider") {
+		input.type = "range";
+		input.min = "0";
+		input.max = "1";
+		input.onchange = changeDeviceSlider;
+	} else if (elementType == "type") {
+		input = document.createElement("select");
+		input.onchange = changeDeviceType;
+		for (key in deviceTypes) {
+			option = document.createElement("option");
+			option.value = key;
+			option.text = deviceTypes[key]["text"];
+			if (key == val) {
+				option.selected = true;
+			}
+			input.appendChild(option);
+		}
+	}
+	if (idName != null) {
+		input.id = idName;
+	}
+	td1.appendChild(text);
+	td2.appendChild(input);
+	tr.append(td1, td2, td3);
+	return tr;
+}
+
+function populateDevice(device, devicesElement, i) {
+	table = document.createElement("table");
+	table.classList.add("device");
+	table.id = i+"_device";
+	tr = createRow("Name:", device.name, "name", i+"_name");
+	table.appendChild(tr);
+	tr = createRow("Enabled:", device.control_enabled ? 1 : 0, "slider", i+"_slider");
+	table.appendChild(tr);
+	tr = createRow("Type:", device.type, "type", i+"_type");
+	table.appendChild(tr);
+	deviceType = device["type"];
+	for (field of deviceTypes[deviceType]["fields"]) {
+		tr = createRow(field["text"], device[field["name"]], field["type"], i+"_"+field["name"]);
+		table.appendChild(tr);	
+	}
+	tr = populateBatteryFullLevels(device.battery_full_levels, i);
+	table.appendChild(tr);
+	devicesElement.appendChild(table);
+}
+
+function populateBatteryFullLevels(levels, i) {
+	tr = document.createElement("tr");
+	td = document.createElement("td");
+	td.innerHTML = "Battery<br />Full<br />Levels: ";
+	tr.appendChild(td);
+	td = document.createElement("td");
+	tab = document.createElement("table");
+	tab.id = i+"_table";
+	tab.innerHTML = "<tr><th>Start Time</th><th>Min Batt Level</th></tr>";
+	percent = document.createTextNode("%");
+	for (let k=0; k<=levels.length; k++) {
+		level = levels[k] ? levels[k] : ["",""];
+		tabtr = document.createElement("tr");
+		tabtr.id = "row_"+i+"_"+k;
+		tabtd1 = document.createElement("td");
+		tabinp1 = document.createElement("input");
+		tabinp1.type = "time";
+		tabinp1.value = level[0];
+		tabinp1.classList.add(i+"_time");
+		tabinp1.id = i+"_time_"+k;
+		tabtd1.appendChild(tabinp1);
+		tabtd2 = document.createElement("td");
+		tabtd2.classList.add("center");
+		tabinp2 = document.createElement("input");
+		tabinp2.type = "number";
+		tabinp2.value = level[1];
+		tabinp2.classList.add("level", "right", i+"_level");
+		tabinp2.id = i+"_level_"+k;
+		tabtd2.appendChild(tabinp2);
+		tabtd2.appendChild(percent.cloneNode());
+		tabtd3 = document.createElement("td");
+		taba = document.createElement("a");
+		if (k == levels.length) {
+			taba.innerHTML = "<i class='fa fa-plus'></i>"
+			taba.id = "create_"+i+"_"+k;
+			taba.onclick = createLevel;
+			taba.classList.add("bold", i+"_create");
+		} else {
+			taba.innerHTML = "&#10006;"
+			taba.id = "delete_"+i+"_"+k;
+			taba.onclick = deleteRow;
+			taba.classList.add("small", i+"_delete");
+		}
+		tabtd3.appendChild(taba);
+		tabtr.append(tabtd1, tabtd2, tabtd3);
+		tab.appendChild(tabtr);
+	}
+	td.appendChild(tab);
+	tr.appendChild(td);
+	return tr;	
+}
+
+function deleteDevice() {
+	idToDelete = this.id.replace("delete", "device");
+	elToDelete = document.getElementById(idToDelete);
+	elToDelete.remove();
+	idToDelete = this.id.replace("delete", "br");
+	elToDelete = document.getElementById(idToDelete);
+	elToDelete.remove();
+}
+
+function deleteRow() {
+	rowIdToDelete = this.id.replace("delete", "row");
+	rowToDelete = document.getElementById(rowIdToDelete);
+	rowToDelete.remove();
+}
+
+function createLevel() {
+	thisId = this.id;
+	i = thisId.replace("create_", "").split("_")[0];
+	k = Number(thisId.replace("create_", "").split("_")[1]) + 1;
+	this.id = thisId.replace("create", "delete");
+	this.innerHTML = "&#10006;"
+	this.classList.remove("bold", "blueshadow", i+"_create");
+	this.classList.add("small", "redshadow", i+"_delete");
+	this.onclick = deleteRow;
+	thisTableId = i+"_table";
+	thisTable = document.getElementById(thisTableId);
+	thisTabletr = document.createElement("tr");
+	thisTabletr.id = "row_"+i+"_"+k;
+	tabtd1 = document.createElement("td");
+	tabinp1 = document.createElement("input");
+	tabinp1.type = "time";
+	tabinp1.classList.add(i+"_time");
+	tabinp1.id = i+"_time_"+k;
+	tabtd1.appendChild(tabinp1);
+	tabtd2 = document.createElement("td");
+	tabtd2.classList.add("center");
+	tabinp2 = document.createElement("input");
+	tabinp2.type = "number";
+	tabinp2.classList.add("level", "right", i+"_level");
+	tabinp2.id = i+"_level_"+k;
+	tabtd2.appendChild(tabinp2);
+	tabtd2.appendChild(percent.cloneNode());
+	tabtd3 = document.createElement("td");
+	taba = document.createElement("a");
+	taba.innerHTML = "<i class='fa fa-plus'></i>"
+	taba.id = "create_"+i+"_"+k;
+	taba.onclick = createLevel;
+	taba.classList.add("bold", i+"_create", "pointer", "blueshadow");
+	tabtd3.appendChild(taba);
+	thisTabletr.append(tabtd1, tabtd2, tabtd3);
+	thisTable.appendChild(thisTabletr);
+}
+
+function disableDevice(deviceNumber, enable) {
+	deviceTypeEl = document.getElementById(deviceNumber+"_type");
+	deviceTypeEl.disabled = !enable;
+	fields = deviceTypes[deviceTypeEl.value]["fields"];
+	for (field of fields) {
+		document.getElementById(deviceNumber+"_"+field["name"]).disabled = !enable;
+	}
+	var times = document.getElementsByClassName(deviceNumber+"_time");
+	for (var i = 0; i < times.length; i++) {
+		times.item(i).disabled = !enable;
+	}
+	var levels = document.getElementsByClassName(deviceNumber+"_level");
+	for (var i = 0; i < levels.length; i++) {
+		levels.item(i).disabled = !enable;
+	}
+	var deleteButtons = document.getElementsByClassName(deviceNumber+"_delete");
+	for (var i = 0; i < deleteButtons.length; i++) {
+		btn = deleteButtons.item(i);
+		btn.onclick = enable ? deleteRow : null;
+		if (enable) {
+			btn.classList.add("pointer", "redshadow")
+			btn.classList.remove("default", "greyshadow")
+		} else {
+			btn.classList.remove("pointer", "redshadow");
+			btn.classList.add("default", "greyshadow");
+		}
+	}
+	var createButtons = document.getElementsByClassName(deviceNumber+"_create");
+	for (var i = 0; i < createButtons.length; i++) {
+		btn = createButtons.item(i);
+		btn.onclick = enable ? createLevel : null;
+		enable ? btn.classList.add("pointer", "blueshadow") : btn.classList.remove("pointer", "blueshadow");
+		enable ? btn.classList.remove("default", "greyshadow") : btn.classList.add("default", "greyshadow");
+	}
+}
+
+function changeDeviceSlider() {
+	deviceNumber = this.id.split("_")[0]
+	enable = this.value == 1;
+	disableDevice(deviceNumber, enable);
+}
+
+function changeSlider() {
+	max_charge_disabled = document.getElementById("set_max_charge_enabled").value == 0;
+	document.getElementById("time_to_set_max_charge").disabled = max_charge_disabled;
+	document.getElementById("solcast_key").disabled = max_charge_disabled;
+	document.getElementById("solcast_site").disabled = max_charge_disabled;
+	document.getElementById("very_sunny_day").disabled = max_charge_disabled;
+	document.getElementById("very_sunny_day_charge").disabled = max_charge_disabled;
+	document.getElementById("not_sunny_day").disabled = max_charge_disabled;
+	document.getElementById("not_sunny_day_charge").disabled = max_charge_disabled;
+	error_checking_disabled = document.getElementById("error_checking_enabled").value == 0;
+	document.getElementById("times_to_check_errors").disabled = error_checking_disabled;
+}
+
+function changeDeviceType() {
+	console.log("changeDeviceType");
+	i = this.id.split("_")[0];
+	deviceType = this.value;
+	table = this.parentElement.parentElement.parentElement;
+	deviceRows = table.children;
+	// delete all rows apart from Name/Enabled/Type
+	// delete from end to avoid weird looping
+	for (j=deviceRows.length-1; j>2; j--) {
+		deviceRows[j].remove();
+	}
+	for (field of deviceTypes[deviceType]["fields"]) {
+		tr = createRow(field["text"], "", field["type"], i+"_"+field["name"]);
+		table.appendChild(tr);	
+	}
+}
+
+$(document).ready(function() {
+	readFromFile();
+});
+
+</script>
+<style>
+.pointer {
+	cursor: pointer;
+}
+
+.redshadow {
+	color: transparent;
+	text-shadow: 0 0 0 red;
+}
+
+.blueshadow {
+	color: transparent;
+	text-shadow: 0 0 0 blue;
+}
+
+.default {
+	cursor: default;
+}
+
+.greyshadow {
+	color: transparent;
+	text-shadow: 0 0 0 grey;
+}
+
+
+.tooltip {
+	position: relative;
+	display: inline-block;
+	border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltiptext {
+	visibility: hidden;
+	width: 300px;
+	background-color: lightskyblue;
+	text-align: center;
+	border-radius: 6px;
+	padding: 5px 0;
+
+	/* Position the tooltip */
+	position: absolute;
+	z-index: 1;
+}
+
+.tooltip:hover .tooltiptext {
+	visibility: visible;
+}
+
+input[type="range"] {
+	width: 40px;
+}
+
+.level {
+	width: 50px;
+}
+
+.center {
+	text-align: center;
+}
+
+.right {
+	text-align: right;
+}
+
+.small {
+	font-size: xx-small;
+}
+
+.blue {
+	color: blue;
+}
+
+.bold {
+	font-weight: bold;
+}
+
+</style>
+</head>
+<body>
+<table border=0>
+<th colspan=2>General</th>
+<tr><td>GivEnergy API Key:</td><td><input id="givenergy_key"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="_blank" href="https://givenergy.cloud/account-settings/security">GivEnergy</a>, it will be over 400 characters long</span></i></td></tr>
+<tr><td>Gmail Address:</td><td><input id="email_address"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Notifications will be sent to this email address</span></i></td></tr>
+<tr><td>Gmail App Password:</td><td><input type="password" id="email_password"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Dont use your email password, generate an app password at <a target="_blank" href="https://myaccount.google.com/apppasswords">Google</a></span></i></td></tr>
+</table><br />
+<table border=0>
+<th colspan=2>Setting the Overnight Charge Percentage</th>
+<tr><td>Enabled:</td><td class="center"><input type="range" min="0" max="1" value="0" id="set_max_charge_enabled" onchange="changeSlider()"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">GivEnergy Manager can query Solcast and set your overnight battery charge percentage accordingly</span></i></td></tr>
+<tr><td>Time to Set Max Charge %age:</td><td class="center"><input type="time" id="time_to_set_max_charge"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">The time of day at which the GivEnergy Manager should query Solcast and set your overnight battery charge percentage eg 20:30</span></i></td></tr>
+<tr><td>Solcast API Key:</td><td><input id="solcast_key"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="solcast" href="https://toolkit.solcast.com.au/account">Solcast</a>, it will be 32 characters long</span></i></td></tr>
+<tr><td>Solcast Site Id:</td><td><input id="solcast_site"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="solcast" href="https://toolkit.solcast.com.au/rooftop-sites">Solcast</a>, it will be 16 characters separated by dashes</span></i></td></tr>
+<tr><td>Very Sunny Day kWh:</td><td><input id="very_sunny_day"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Amount of solar you would expect to generate on a very sunny day eg 25</span></i></td></tr>
+<tr><td>Very Sunny Day Charge %age:</td><td><input id="very_sunny_day_charge"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Percentage you would like your battery charged to, on a very sunny day eg 50</span></i></td></tr>
+<tr><td>Not Sunny Day kWh:</td><td><input id="not_sunny_day"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Amount of solar you would expect to generate on a not sunny day eg 10</span></i></td></tr>
+<tr><td>Not Sunny Day Charge %age:</td><td><input id="not_sunny_day_charge"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Percentage you would like your battery charged to, on a not sunny day eg 100</span></i></td></tr>
+</table><br />
+<table border=0>
+<th colspan=2>Inverter Error Checking</th>
+<tr><td>Enabled:</td><td class="center"><input type="range" min="0" max="1" value="0" id="error_checking_enabled" onchange="changeSlider()"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">GivEnergy Manager can do regular checks for inervtor errors and reboot the inverter if needed</span></i></td></tr>
+<tr><td>Times to Check For Errors:</td><td><input id="times_to_check_errors"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">The times each hour that GivEnergy Manager should check your invertor for errors, eg 0,30 (leave blank to disable error checking)</span></i></td></tr>
+</table>
+<h4>Devices</h4>
+
+<div id="devices">
+</div>
+<br />
+<button onclick="readFromFile()">Reload From File</button><br /><br />
+<button onclick="writeToFile()">Save to File</button>
+<span id="success"></span>
+<br /><br />
+
+</body>
+</html>
