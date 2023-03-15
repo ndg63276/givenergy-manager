@@ -6,6 +6,10 @@
 <script>
 
 const deviceTypes = {
+	"givenergy-export": {
+		"text": "GivEnergy Export",
+		"fields": []
+	},
 	"tapo": {
 		"text": "Tapo",
 		"fields": [
@@ -306,7 +310,7 @@ function populateBatteryFullLevels(levels, i) {
 			taba.innerHTML = "<i class='fa fa-plus'></i>"
 			taba.id = "create_"+i+"_"+k;
 			taba.onclick = createLevel;
-			taba.classList.add("bold", i+"_create");
+			taba.classList.add("bold", i+"_create", "pointer", "blueshadow");
 		} else {
 			taba.innerHTML = "&#10006;"
 			taba.id = "delete_"+i+"_"+k;
