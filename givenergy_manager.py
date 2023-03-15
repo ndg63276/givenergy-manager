@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import argparse
 from time import sleep
@@ -97,12 +97,27 @@ def switch_smartlife(device, value):
 	return action_message
 
 
+def switch_givenergyexport(device, value):
+	from givenergy_functions import switch_DC_discharging
+	action_message = ""
+	j = read_json()
+	headers = get_headers(j["givenergy_key"])
+	device_switched = switch_DC_discharging(headers, value)
+	if device_switched and value == True:
+		action_message = "So turning on " + device["name"] + ".\n"
+	elif device_switched and value == False:
+		action_message = "So turning off " + device["name"] + ".\n"
+	return action_message
+
+
 def switch_device(device, value, msg):
 	msg2 = ""
 	if "type" in device and device["type"] == "tapo":
 		msg2 = switch_tapo(device, value)
 	elif "type" in device and device["type"] == "smartlife":
 		msg2 = switch_smartlife(device, value)
+	elif "type" in device and device["type"] == "givenergy-export":
+		msg2 = switch_givenergyexport(device, value)
 	if msg2 != "":
 		msg2 = msg + msg2
 	return msg2
