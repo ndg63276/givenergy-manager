@@ -1,5 +1,5 @@
 import requests
-from general_functions import get_headers
+from time import sleep
 
 
 def get_battery_level(headers):
@@ -75,29 +75,125 @@ def restart_inverter(headers):
 def get_AC_charge_limit(headers, inverter_id=None):
     if inverter_id is None:
         inverter_id = get_inverter_id(headers)
-    url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/77/read'
-    r = requests.post(url, headers=headers)
-    if 'data' in r.json() and 'value' in r.json()['data']:
-        return r.json()['data']['value']
-    return None
+    value = get_inverter_setting(headers, 77, inverter_id)
+    return value
 
 
 def set_AC_charge_limit(headers, value, inverter_id=None):
     if inverter_id is None:
         inverter_id = get_inverter_id(headers)
-    url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/77/write'
-    payload = { "value": value }
-    r = requests.post(url, headers=headers, json=payload)
-    success = False
-    if 'data' in r.json() and 'success' in r.json()['data']:
-        success = r.json()['data']['success']
+    # Set AC charge limit percentage
+    success = set_inverter_setting(headers, 77, value, inverter_id)
     if success and value < 100:
         # enable AC charge upper limit
-        url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/17/write'
-        payload = { "value": True }
+        success = set_inverter_setting(headers, 17, True, inverter_id)
+    return success
+
+
+def is_DC_discharging(headers, inverter_id=None):
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    return get_inverter_setting(headers, 56)
+
+
+def switch_DC_discharging(headers, value, inverter_id=None):
+    changed = False
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    is_discharging = is_DC_discharging(headers, inverter_id)
+    if value is True and is_discharging is False:
+        changed = start_DC_discharging(headers, inverter_id)
+    if value is False and is_discharging is True:
+        changed = end_DC_discharging(headers, inverter_id)
+    return changed
+
+
+def start_DC_discharging(headers, inverter_id=None):
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    # Disable Eco mode
+    success = set_eco_mode(headers, False)
+    if success:
+        # set Discharge 2 start time
+        sleep(5)
+        success = set_inverter_setting(headers, 41, "00:00", inverter_id)
+    if success:
+        # set Discharge 2 end time
+        sleep(5)
+        success = set_inverter_setting(headers, 42, "23:59", inverter_id)
+    if success:
+        # enable DC discharge
+        sleep(5)
+        success = set_inverter_setting(headers, 56, True, inverter_id)
+    if success:
+        # disable AC charge
+        sleep(5)
+        success = set_inverter_setting(headers, 66, False, inverter_id)
+    return success
+
+
+def end_DC_discharging(headers, inverter_id=None):
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    # Enable Eco mode
+    success = set_eco_mode(headers, True)
+    if success:
+        # set Discharge 2 start time
+        sleep(5)
+        success = set_inverter_setting(headers, 41, "00:00", inverter_id)
+    if success:
+        # set Discharge 2 end time
+        sleep(5)
+        success = set_inverter_setting(headers, 42, "00:00", inverter_id)
+    if success:
+        # disable DC discharge
+        sleep(5)
+        success = set_inverter_setting(headers, 56, False, inverter_id)
+    if success:
+        # enable AC charge
+        sleep(5)
+        success = set_inverter_setting(headers, 66, True, inverter_id)
+    return success
+
+
+def set_eco_mode(headers, value, inverter_id=None):
+    success = False
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/presets/0'
+    payload = { "enabled": value }
+    for i in range(5):
         r = requests.post(url, headers=headers, json=payload)
         if 'data' in r.json() and 'success' in r.json()['data']:
             success = r.json()['data']['success']
-        else:
-            success = False
+        if success:
+            break
+        sleep(60)
     return success
+
+
+def set_inverter_setting(headers, setting_no, value, inverter_id=None):
+    success = False
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/'+str(setting_no)+'/write'
+    payload = { "value": value }
+    for i in range(3):
+        r = requests.post(url, headers=headers, json=payload)
+        if 'data' in r.json() and 'success' in r.json()['data']:
+            success = r.json()['data']['success']
+        if success:
+            break
+        sleep(60)
+    return success
+
+
+def get_inverter_setting(headers, setting_no, inverter_id=None):
+    value = None
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    url = 'https://api.givenergy.cloud/v1/inverter/'+inverter_id+'/settings/'+str(setting_no)+'/read'
+    r = requests.post(url, headers=headers)
+    if 'data' in r.json() and 'value' in r.json()['data']:
+        value = r.json()['data']['value']
+    return value
