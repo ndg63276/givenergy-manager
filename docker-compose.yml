@@ -1,7 +1,7 @@
 version: '3.8'
-name: givenergy-manager
+name: givenergymanager
 services:
-  givenergy-manager:
-      image: ndg63276/givenergy-manager:latest
+  givenergymanager:
+      image: ndg63276/givenergymanager:latest
       ports:
         - '8001:8001'

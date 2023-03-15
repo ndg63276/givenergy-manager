@@ -1,9 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import cgi
 import json
 import sys
 import os
+
+import cgitb
+cgitb.enable()
 
 filename = "user_input.json"
 

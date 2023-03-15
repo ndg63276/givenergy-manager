@@ -1,12 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
-if sys.version_info[0] == 3: # python3
-
-	from http.server import HTTPServer, CGIHTTPRequestHandler
-else: # python2
-	from BaseHTTPServer import HTTPServer
-	from CGIHTTPServer import CGIHTTPRequestHandler
+from http.server import HTTPServer, CGIHTTPRequestHandler
 
 if len(sys.argv) > 1:
 	port = int(sys.argv[1])
