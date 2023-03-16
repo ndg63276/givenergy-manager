@@ -276,6 +276,7 @@ function populateDevice(device, devicesElement, i) {
 
 function populateBatteryFullLevels(levels, i) {
 	tr = document.createElement("tr");
+	tr.id = "row"+i+"_battery_full_levels";
 	td = document.createElement("td");
 	td.innerHTML = "Battery<br />Full<br />Levels: ";
 	tr.appendChild(td);
@@ -437,6 +438,8 @@ function changeSlider() {
 function changeDeviceType() {
 	console.log("changeDeviceType");
 	i = this.id.split("_")[0];
+	// save battery_full_levels from old device type
+	batteryLevelsRow = document.getElementById("row"+i+"_battery_full_levels");
 	deviceType = this.value;
 	table = this.parentElement.parentElement.parentElement;
 	deviceRows = table.children;
@@ -449,6 +452,7 @@ function changeDeviceType() {
 		tr = createRow(field["text"], "", field["type"], i+"_"+field["name"]);
 		table.appendChild(tr);	
 	}
+	table.appendChild(batteryLevelsRow);
 }
 
 $(document).ready(function() {
