@@ -38,13 +38,24 @@ def check_for_errors(headers):
 	return ""
 
 
-def set_max_charge(headers, j):
+def calculate_max_charge(headers, j):
 	tomorrows_estimate = round(get_tomorrows_forecast_total(j["solcast_key"], j["solcast_site"]), 2)
 	maxmin_tomorrows_estimate = max(min(j["very_sunny_day"], tomorrows_estimate), j["not_sunny_day"])  # ensure estimate is between eg 10 and 20 kWh
 	ranged_tomorrows_estimate = maxmin_tomorrows_estimate - j["not_sunny_day"]  # ensure between 0 and eg 10
 	percentage_difference_per_kwh = (j["not_sunny_day_charge"] - j["very_sunny_day_charge"]) / (j["very_sunny_day"] - j["not_sunny_day"])  # eg (100-70)/(20-10) = 3
 	reqd_ac_charge = int(j["not_sunny_day_charge"] - ranged_tomorrows_estimate * percentage_difference_per_kwh)  # reqd charge between eg 70% and 100%
 	output = "Tomorrow's solar estimate is "+str(tomorrows_estimate)+"kWh, so have set AC charging to "+str(reqd_ac_charge)+"%.\n"
+	output = set_max_charge(headers, reqd_ac_charge, output)
+	return output
+
+
+def force_max_charge(headers, reqd_ac_charge):
+	output = "Setting AC charging to "+str(reqd_ac_charge)+"%.\n"
+	output = set_max_charge(headers, reqd_ac_charge, output)
+	return output
+
+
+def set_max_charge(headers, reqd_ac_charge, output=""):
 	attempts = 5
 	for i in range(attempts):
 		set_AC_charge_limit(headers, reqd_ac_charge)
@@ -128,21 +139,24 @@ def main(args):
 	body = ""
 	j = read_json()
 	headers = get_headers(j["givenergy_key"])
-	battery_level = get_battery_level(headers)
-	for device in j["devices"]:
-		if "control_enabled" not in device or device["control_enabled"] == False:
-			continue
-		battery_full_enough, msg = is_battery_full_enough(battery_level, device["battery_full_levels"])
-		if battery_full_enough is not None:
-			body += switch_device(device, battery_full_enough, msg)
-	if args.forcemaxcharge or (
-			j["set_max_charge_enabled"] is True and
-			datetime.strftime(datetime.now(), "%H:%M") == j["time_to_set_max_charge"]):
-		body += set_max_charge(headers, j)
-	if args.forceerrorcheck or (
-			j["error_checking_enabled"] is True and
-			datetime.now().minute in j["times_to_check_errors"]):
-		body += check_for_errors(headers)
+	if args.forcemaxcharge > 0:
+		body += force_max_charge(headers, args.forcemaxcharge)
+	else:
+		battery_level = get_battery_level(headers)
+		for device in j["devices"]:
+			if "control_enabled" not in device or device["control_enabled"] == False:
+				continue
+			battery_full_enough, msg = is_battery_full_enough(battery_level, device["battery_full_levels"])
+			if battery_full_enough is not None:
+				body += switch_device(device, battery_full_enough, msg)
+		if args.calculatemaxcharge or (
+				j["set_max_charge_enabled"] is True and
+				datetime.strftime(datetime.now(), "%H:%M") == j["time_to_set_max_charge"]):
+			body += calculate_max_charge(headers, j)
+		if args.forceerrorcheck or (
+				j["error_checking_enabled"] is True and
+				datetime.now().minute in j["times_to_check_errors"]):
+			body += check_for_errors(headers)
 	if body != "":
 		send_email(subject, body)
 
@@ -150,12 +164,14 @@ def main(args):
 if __name__ == "__main__":
 	forever = False
 	delay = 60
-	forcemaxcharge = False
+	forcemaxcharge = -1
+	calculatemaxcharge = False
 	forceerrorcheck = False
 	parser = argparse.ArgumentParser(description="")
 	parser.add_argument("--forever", action="store_true", default=forever)
 	parser.add_argument("--delay", action="store", default=delay)
-	parser.add_argument("--forcemaxcharge", action="store_true", default=forcemaxcharge)
+	parser.add_argument("--forcemaxcharge", action="store", type=int, default=forcemaxcharge)
+	parser.add_argument("--calculatemaxcharge", action="store_true", default=calculatemaxcharge)
 	parser.add_argument("--forceerrorcheck", action="store_true", default=forceerrorcheck)
 	args, unknown = parser.parse_known_args()
 	if args.forever:
