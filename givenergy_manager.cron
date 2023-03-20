@@ -1,5 +1,5 @@
 # m h d m dow command
-*/5 * * * * /app/givenergy_manager.py >> /var/log/cron.log 2>&1
+*/5 * * * * /app/cgi-bin/givenergy_manager.py >> /var/log/cron.log 2>&1
 # Add an empty line at the end
 
 
