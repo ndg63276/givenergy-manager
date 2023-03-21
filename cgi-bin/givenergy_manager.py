@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import cgi
 from time import sleep
 from datetime import datetime
 from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit, get_AC_charge_limit, get_battery_level
@@ -59,7 +60,7 @@ def set_max_charge(headers, reqd_ac_charge, output=""):
 	attempts = 5
 	for i in range(attempts):
 		set_AC_charge_limit(headers, reqd_ac_charge)
-		sleep(10)
+		sleep(1)
 		if get_AC_charge_limit(headers) == reqd_ac_charge:
 			break
 		sleep(5)
@@ -141,7 +142,7 @@ def main(args):
 	headers = get_headers(j["givenergy_key"])
 	if args.forcemaxcharge > 0:
 		body += force_max_charge(headers, args.forcemaxcharge)
-	else:
+	if args.checkdevices:
 		battery_level = get_battery_level(headers)
 		for device in j["devices"]:
 			if "control_enabled" not in device or device["control_enabled"] == False:
@@ -149,30 +150,53 @@ def main(args):
 			battery_full_enough, msg = is_battery_full_enough(battery_level, device["battery_full_levels"])
 			if battery_full_enough is not None:
 				body += switch_device(device, battery_full_enough, msg)
-		if args.calculatemaxcharge or (
-				j["set_max_charge_enabled"] is True and
-				datetime.strftime(datetime.now(), "%H:%M") == j["time_to_set_max_charge"]):
-			body += calculate_max_charge(headers, j)
-		if args.forceerrorcheck or (
-				j["error_checking_enabled"] is True and
-				datetime.now().minute in j["times_to_check_errors"]):
-			body += check_for_errors(headers)
-	if body != "":
-		send_email(subject, body)
+	if args.calculatemaxcharge or (
+			j["set_max_charge_enabled"] is True and
+			datetime.strftime(datetime.now(), "%H:%M") == j["time_to_set_max_charge"]):
+		body += calculate_max_charge(headers, j)
+	if args.forceerrorcheck or (
+			j["error_checking_enabled"] is True and
+			datetime.now().minute in j["times_to_check_errors"]):
+		body += check_for_errors(headers)
+	if args.email:
+		if body != "":
+			send_email(subject, body)
+	else:
+		print(body)
 
 
 if __name__ == "__main__":
+	# default values
+	checkdevices = False
 	forever = False
 	delay = 60
 	forcemaxcharge = -1
 	calculatemaxcharge = False
 	forceerrorcheck = False
+	email = False
+
+	# get from web requests
+	fs = cgi.FieldStorage()
+	if fs.getvalue("checkdevices") is not None and fs.getvalue("checkdevices").lower() == "true":
+		checkdevices = True
+	if fs.getvalue("forcemaxcharge") is not None:
+		forcemaxcharge = int(fs.getvalue("forcemaxcharge"))
+	if fs.getvalue("calculatemaxcharge") is not None and fs.getvalue("calculatemaxcharge").lower() == "true":
+		calculatemaxcharge = True
+	if fs.getvalue("forceerrorcheck") is not None and fs.getvalue("forceerrorcheck").lower() == "true":
+		forceerrorcheck = True
+	if fs.getvalue("email") is not None and fs.getvalue("email").lower() == "true":
+		email = True
+
+	# command line arguments
 	parser = argparse.ArgumentParser(description="")
+	parser.add_argument("--checkdevices", action="store_true", default=checkdevices)
 	parser.add_argument("--forever", action="store_true", default=forever)
 	parser.add_argument("--delay", action="store", default=delay)
 	parser.add_argument("--forcemaxcharge", action="store", type=int, default=forcemaxcharge)
 	parser.add_argument("--calculatemaxcharge", action="store_true", default=calculatemaxcharge)
 	parser.add_argument("--forceerrorcheck", action="store_true", default=forceerrorcheck)
+	parser.add_argument("--email", action="store_true", default=email)
 	args, unknown = parser.parse_known_args()
 	if args.forever:
 		while True:
