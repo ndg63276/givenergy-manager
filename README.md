@@ -82,4 +82,4 @@ GivEnergy smart plugs are just rebadged Smartlife plugs, so if you want to switc
 
 
 ### Alexa Skill
-GivEnergy has it's own official Alexa skill, but if you want to deploy your own, you can do using the included interaction model. Upload that to the JSON editor in the Amazon developer console. Then upload all the files to AWS Lambda, and the skill will use the lambda_function.py file.
+GivEnergy has it's own official Alexa skill, but if you want to deploy your own, you can do using the included interaction model. Upload that to the JSON editor in the Amazon developer console. Then upload all the files in cgi-bin/ to AWS Lambda, and the skill will use the lambda_function.py file.
