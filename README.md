@@ -14,7 +14,7 @@ This repo has some utilities for GivEnergy batteries/inverters. It has 3 main fu
 ```
 
 ### Docker
-Alternatively, you can build and run from a Docker image. You will require [docker](https://docs.docker.com/get-docker/ "docker") and docker-compose setup and working first.
+Alternatively, you can build and run from a Docker image. It is on [Dockerhub](https://hub.docker.com/r/markwilliams4/givenergymanager), or you can build your own. You will require [docker](https://docs.docker.com/get-docker/ "docker") and docker-compose setup and working first.
 
 1. Clone this repository
 ```shell
