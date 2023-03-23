@@ -8,7 +8,10 @@ This repo has some utilities for GivEnergy batteries/inverters. It has 3 main fu
 ### Instructions
 1) Clone this repo
 2) Copy example_user_input.json to user_input.json (see below for more info)
-3) Run a cron job every minute for givenergy_manager.py. Alternatively, run from the command line with the option --forever.
+3) Run a cron job every minute or so for givenergy_manager.py, eg
+```shell
+*/5 * * * * /home/pi/givenergy-manager/cgi-bin/givenergy_manager.py --checkdevices --email >> /var/log/cron.log 2>&1
+```
 
 ### Docker
 Alternatively, you can build and run from a Docker image. You will require [docker](https://docs.docker.com/get-docker/ "docker") and docker-compose setup and working first.
