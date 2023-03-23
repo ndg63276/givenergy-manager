@@ -2,15 +2,43 @@
 
 This repo has some utilities for GivEnergy batteries/inverters. It has 3 main functions:
 * Checking the inverter for errors, if the inverter is in an error state for 15 mins, it is rebooted.
-* Getting the solar forecast from Solcast, and setting the AC charge level appropriately (eg if tomorrow will be sunny, there's no need to charge to 100% tonight)
-* Turning on a Tapo or Smartlife smart plug if the battery is full enough, to eg charge an electric car, run a heater etc
+* Getting the solar forecast from Solcast, and setting the AC charge level appropriately (eg if tomorrow will be sunny, there's no need to charge to 100% tonight) - this is designed for tariffs like Octopus Go with cheap night time electricity.
+* Turning on a Tapo or Smartlife smart plug, or forcing export from your GivEnergy battery, if the battery is full enough, to eg charge an electric car, run a heater, or take advantage of the Octopus Flux tariff.
 
 ### Instructions
 1) Clone this repo
 2) Copy example_user_input.json to user_input.json (see below for more info)
 3) Run a cron job every minute for givenergy_manager.py. Alternatively, run from the command line with the option --forever.
 
+### Docker
+Alternatively, you can build and run from a Docker image. You will require [docker](https://docs.docker.com/get-docker/ "docker") and docker-compose setup and working first.
+
+1. Clone this repository
+```shell
+git clone https://github.com/ndg63276/givenergy-manager.git
+```
+2. Enter the project folder
+```shell
+cd givenergy-manager
+```
+3. Build a local docker image
+```shell
+docker build -t ndg63276/givenergymanager .
+```
+4. Run Your locally built docker image with docker compose
+```shell
+docker compose up -d
+```
+5. The cron job will run every 5 minutes on the Docker image.
+6. Navigate to http://localhost:8001 in your browser to use the web editor for user_input.json
+
 ### user_input.json
+I recommend using the Docker image above, or running the webserver by using
+```shell
+python serve.py 8001
+```
+and then going to http://localhost:8001 in a browser, to use the web editor.
+But if you are manually editing the user_input.json file, here are the keys. 
 * givenergy_key - this is the API key you get from https://givenergy.cloud/account-settings/security
 * email_address - this is a gmail address you can use to email yourself notifications when the manager does something
 * email_password - you need a gmail app password here, not your google password, see https://myaccount.google.com/apppasswords
@@ -27,7 +55,7 @@ This repo has some utilities for GivEnergy batteries/inverters. It has 3 main fu
 * devices - a list of dictionaries, of the devices you want the GivEnergy Manager to turn on/off based on battery level. Each device needs these keys:
   * name - a friendly name to use in GivEnergy Manager
   * control_enabled - set True/False if you want GivEnergy manager to control the device or not
-  * type - either "tapo" or "smartlife"
+  * type - either "tapo", "smartlife", or "givenergy-export"
   * username - your login to the Tapo or Smartlife apps
   * password - your password to the Tapo or Smartlife apps
   * ip - Tapo only - the (local) IP address of the Tapo device you wanr to control, you can find this in the Tapo app
