@@ -140,12 +140,13 @@ def main(args):
 	body = ""
 	j = read_json()
 	headers = get_headers(j["givenergy_key"])
+	if args.checkdevices or args.batterylevel:
+		battery_level = get_battery_level(headers)
 	if args.testemail:
-		body = "This is a test of the email system."
+		body = "This is a test of the email system.\n"
 	if args.forcemaxcharge > 0:
 		body += force_max_charge(headers, args.forcemaxcharge)
 	if args.checkdevices:
-		battery_level = get_battery_level(headers)
 		for device in j["devices"]:
 			if "control_enabled" not in device or device["control_enabled"] == False:
 				continue
@@ -160,6 +161,11 @@ def main(args):
 			j["error_checking_enabled"] is True and
 			datetime.now().minute in j["times_to_check_errors"]):
 		body += check_for_errors(headers)
+	if args.batterylevel:
+		if type(battery_level) == int:
+			body += "The battery is "+str(battery_level)+"% full.\n"
+		else:
+			body += "Error reading the battery level: "+battery_level
 	if args.email or args.testemail:
 		if body != "":
 			send_email(subject, body)
@@ -177,6 +183,7 @@ if __name__ == "__main__":
 	forceerrorcheck = False
 	email = False
 	testemail = False
+	batterylevel = False
 
 	# get from web requests
 	fs = cgi.FieldStorage()
@@ -192,6 +199,8 @@ if __name__ == "__main__":
 		email = True
 	if fs.getvalue("testemail") is not None and fs.getvalue("testemail").lower() == "true":
 		testemail = True
+	if fs.getvalue("batterylevel") is not None and fs.getvalue("batterylevel").lower() == "true":
+		batterylevel = True
 
 	# command line arguments
 	parser = argparse.ArgumentParser(description="")
@@ -203,6 +212,7 @@ if __name__ == "__main__":
 	parser.add_argument("--forceerrorcheck", action="store_true", default=forceerrorcheck)
 	parser.add_argument("--email", action="store_true", default=email)
 	parser.add_argument("--testemail", action="store_true", default=testemail)
+	parser.add_argument("--batterylevel", action="store_true", default=batterylevel)
 	args, unknown = parser.parse_known_args()
 	if args.forever:
 		while True:
