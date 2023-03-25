@@ -84,7 +84,7 @@ function generateObjectFromPage() {
 		{"key": "set_max_charge_enabled", "type": "bool"},
 		{"key": "time_to_set_max_charge", "type": "string"},
 		{"key": "solcast_key", "type": "string"},
-		{"key": "solcast_site", "type": "string"},
+		{"key": "solcast_site", "type": "list"},
 		{"key": "very_sunny_day", "type": "number"},
 		{"key": "very_sunny_day_charge", "type": "number"},
 		{"key": "not_sunny_day", "type": "number"},
@@ -102,6 +102,8 @@ function generateObjectFromPage() {
 			output[key] = Number(val);
 		} else if (field["type"] == "numlist") {
 			output[key] = val.split(",").map(Number);
+		} else if (field["type"] == "list") {
+			output[key] = val.split(",");
 		} else {
 			output[key] = val;
 		}
@@ -556,8 +558,8 @@ input[type="range"] {
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">The time of day at which the GivEnergy Manager should query Solcast and set your overnight battery charge percentage eg 20:30</span></i></td></tr>
 <tr><td>Solcast API Key:</td><td><input id="solcast_key"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="solcast" href="https://toolkit.solcast.com.au/account">Solcast</a>, it will be 32 characters long</span></i></td></tr>
-<tr><td>Solcast Site Id:</td><td><input id="solcast_site"></td>
-<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="solcast" href="https://toolkit.solcast.com.au/rooftop-sites">Solcast</a>, it will be 16 characters separated by dashes</span></i></td></tr>
+<tr><td>Solcast Site Id(s):</td><td><input id="solcast_site"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="solcast" href="https://toolkit.solcast.com.au/rooftop-sites">Solcast</a>, it will be 16 characters separated by dashes. Separate multiple site id's with commas.</span></i></td></tr>
 <tr><td>Very Sunny Day kWh:</td><td><input id="very_sunny_day"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Amount of solar you would expect to generate on a very sunny day eg 25</span></i></td></tr>
 <tr><td>Very Sunny Day Charge %age:</td><td><input id="very_sunny_day_charge"></td>

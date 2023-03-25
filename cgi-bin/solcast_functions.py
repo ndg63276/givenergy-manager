@@ -13,11 +13,14 @@ def get_solcast_forecast(solcast_key, solcast_site):
 
 
 def get_tomorrows_forecast_total(solcast_key, solcast_site):
-    forecast = get_solcast_forecast(solcast_key, solcast_site)
     total = 0
     tomorrow = datetime.now()+timedelta(days=1)
-    for i in forecast:
-        end = datetime.strptime(i['period_end'], '%Y-%m-%dT%H:%M:%S.%f0Z')
-        if end.date() == tomorrow.date():
-            total += i['pv_estimate'] / 2
+    if type(solcast_site) == str:
+        solcast_site = [solcast_site]
+    for site in solcast_site:
+        forecast = get_solcast_forecast(solcast_key, site)
+        for i in forecast:
+            end = datetime.strptime(i['period_end'], '%Y-%m-%dT%H:%M:%S.%f0Z')
+            if end.date() == tomorrow.date():
+                total += i['pv_estimate'] / 2
     return total
