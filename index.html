@@ -3,7 +3,10 @@
 <title>GivEnergy Manager Config Editor</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <script src="https://releases.jquery.com/git/jquery-3.x-git.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+
+var chargeChart;
 
 const deviceTypes = {
 	"givenergy-export": {
@@ -146,6 +149,7 @@ function readFromFile() {
 		success: function(json) {
 			console.log(json);
 			populatePage(json);
+			drawGraph();
 		}
 	})
 }
@@ -433,6 +437,7 @@ function changeSlider() {
 	document.getElementById("very_sunny_day_charge").disabled = max_charge_disabled;
 	document.getElementById("not_sunny_day").disabled = max_charge_disabled;
 	document.getElementById("not_sunny_day_charge").disabled = max_charge_disabled;
+	document.getElementById("chargeChart").classList.toggle("hidden", max_charge_disabled);
 	error_checking_disabled = document.getElementById("error_checking_enabled").value == 0;
 	document.getElementById("times_to_check_errors").disabled = error_checking_disabled;
 }
@@ -455,6 +460,82 @@ function changeDeviceType() {
 		table.appendChild(tr);	
 	}
 	table.appendChild(batteryLevelsRow);
+}
+
+function drawGraph() {
+	if (chargeChart) { chargeChart.destroy() };
+	var ctx = document.getElementById("chargeChart");
+	x1 = parseInt(document.getElementById("not_sunny_day").value);
+	x2 = parseInt(document.getElementById("very_sunny_day").value);
+	y1 = document.getElementById("not_sunny_day_charge").value;
+	y2 = document.getElementById("very_sunny_day_charge").value;
+	var data = {
+		datasets: [{
+			data: [{
+				x: 0,
+				y: y1,
+			}, {
+				x: x1,
+				y: y1,
+			}, {
+				x: x2,
+				y: y2,
+			}, {
+				x: x2+15,
+				y: y2,
+			}],
+			showLine: true,
+			backgroundColor: 'rgb(255, 99, 132)',
+			borderColor: 'rgb(255, 99, 132)',
+			tooltip: {
+				callbacks: {
+					label: function(tooltipItems, data) {
+						x = tooltipItems.raw.x;
+						y = tooltipItems.raw.y;
+						return 'If '+x+'kWh is predicted, battery will charge to '+y+'%';
+					},
+				},
+			},
+		}],
+	};
+	var config = {
+		type: 'scatter',
+		data: data,
+		options: {
+			clip: false,
+			maintainAspectRatio: false,
+			scales: {
+				x: {
+					type: 'linear',
+					position: 'bottom',
+					max: x2+10,
+					title: {
+						display: true,
+						text: 'kWh',
+					},
+				},
+				y: {
+					min: 0,
+					max: 100,
+					title: {
+						display: true,
+						text: '%',
+					},
+				},
+			},
+			plugins: {
+				legend: {
+					display: false,
+				},
+			},
+			layout: {
+				padding: {
+					top: 50,
+				},
+			},
+		},
+	};
+	chargeChart = new Chart(ctx, config);
 }
 
 $(document).ready(function() {
@@ -538,6 +619,11 @@ input[type="range"] {
 	font-weight: bold;
 }
 
+.hidden {
+	display: none;
+	visibility: hidden;
+}
+
 </style>
 </head>
 <body>
@@ -550,6 +636,9 @@ input[type="range"] {
 <tr><td>Gmail App Password:</td><td><input type="password" id="email_password"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Dont use your email password, generate an app password at <a target="_blank" href="https://myaccount.google.com/apppasswords">Google</a></span></i></td></tr>
 </table><br />
+
+<table border=0>
+<tr><td>
 <table border=0>
 <th colspan=2>Setting the Overnight Charge Percentage</th>
 <tr><td>Enabled:</td><td class="center"><input type="range" min="0" max="1" value="0" id="set_max_charge_enabled" onchange="changeSlider()"></td>
@@ -560,15 +649,19 @@ input[type="range"] {
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="solcast" href="https://toolkit.solcast.com.au/account">Solcast</a>, it will be 32 characters long</span></i></td></tr>
 <tr><td>Solcast Site Id(s):</td><td><input id="solcast_site"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="solcast" href="https://toolkit.solcast.com.au/rooftop-sites">Solcast</a>, it will be 16 characters separated by dashes. Separate multiple site id's with commas.</span></i></td></tr>
-<tr><td>Very Sunny Day kWh:</td><td><input id="very_sunny_day"></td>
+<tr><td>Very Sunny Day kWh:</td><td><input id="very_sunny_day" onchange="drawGraph()"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Amount of solar you would expect to generate on a very sunny day eg 25</span></i></td></tr>
-<tr><td>Very Sunny Day Charge %age:</td><td><input id="very_sunny_day_charge"></td>
+<tr><td>Very Sunny Day Charge %age:</td><td><input id="very_sunny_day_charge" onchange="drawGraph()"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Percentage you would like your battery charged to, on a very sunny day eg 50</span></i></td></tr>
-<tr><td>Not Sunny Day kWh:</td><td><input id="not_sunny_day"></td>
+<tr><td>Not Sunny Day kWh:</td><td><input id="not_sunny_day" onchange="drawGraph()"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Amount of solar you would expect to generate on a not sunny day eg 10</span></i></td></tr>
-<tr><td>Not Sunny Day Charge %age:</td><td><input id="not_sunny_day_charge"></td>
+<tr><td>Not Sunny Day Charge %age:</td><td><input id="not_sunny_day_charge" onchange="drawGraph()"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Percentage you would like your battery charged to, on a not sunny day eg 100</span></i></td></tr>
-</table><br />
+</table>
+</td><td>
+<canvas id="chargeChart"></canvas>
+</td></tr></table>
+<br />
 <table border=0>
 <th colspan=2>Inverter Error Checking</th>
 <tr><td>Enabled:</td><td class="center"><input type="range" min="0" max="1" value="0" id="error_checking_enabled" onchange="changeSlider()"></td>
