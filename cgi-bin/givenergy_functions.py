@@ -1,5 +1,11 @@
+#!/usr/bin/env python3
+
+import cgi
+import json
+import argparse
 import requests
 from time import sleep
+from general_functions import read_json, get_headers
 
 
 def get_battery_level(headers):
@@ -181,3 +187,39 @@ def get_inverter_setting(headers, setting_no, inverter_id=None):
     if 'data' in r.json() and 'value' in r.json()['data']:
         value = r.json()['data']['value']
     return value
+
+
+def get_status():
+    output = {}
+    j = read_json()
+    headers = get_headers(j["givenergy_key"])
+    inverter_id = get_inverter_id(headers)
+    output["inverter_id"] = inverter_id
+    output["ac_charge_limit"] = get_AC_charge_limit(headers, inverter_id)
+    output["eco_mode"] = is_in_eco_mode(headers, inverter_id)
+    output["inverter_status"] = get_inverter_status(headers)
+    output["system_data"] = get_latest_system_data(headers)
+    return output
+
+
+if __name__ == "__main__":
+    # defaults
+    getstatus = False
+    output = {}
+
+    # get from web requests
+    fs = cgi.FieldStorage()
+    if fs.getvalue("getstatus") is not None and fs.getvalue("getstatus").lower() == "true":
+        getstatus = True
+
+    # command line arguments
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument("--getstatus", action="store_true", default=getstatus)
+
+    args, unknown = parser.parse_known_args()
+    if args.getstatus:
+        output = get_status()
+
+    print("Content-Type: application/json")
+    print()
+    print(json.dumps(output))
