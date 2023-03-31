@@ -151,6 +151,9 @@ def main(args):
 			if "control_enabled" not in device or device["control_enabled"] == False:
 				continue
 			battery_full_enough, msg = is_battery_full_enough(battery_level, device["battery_full_levels"])
+			if args.debug:
+				print("Checking "+device["name"])
+				print("Battery full enough: "+str(battery_full_enough))
 			if battery_full_enough is not None:
 				body += switch_device(device, battery_full_enough, msg)
 	if args.calculatemaxcharge or (
@@ -184,6 +187,7 @@ if __name__ == "__main__":
 	email = False
 	testemail = False
 	batterylevel = False
+	debug = False
 
 	# get from web requests
 	fs = cgi.FieldStorage()
@@ -201,6 +205,8 @@ if __name__ == "__main__":
 		testemail = True
 	if fs.getvalue("batterylevel") is not None and fs.getvalue("batterylevel").lower() == "true":
 		batterylevel = True
+	if fs.getvalue("debug") is not None and fs.getvalue("debug").lower() == "true":
+		debug = True
 
 	# command line arguments
 	parser = argparse.ArgumentParser(description="")
@@ -213,6 +219,7 @@ if __name__ == "__main__":
 	parser.add_argument("--email", action="store_true", default=email)
 	parser.add_argument("--testemail", action="store_true", default=testemail)
 	parser.add_argument("--batterylevel", action="store_true", default=batterylevel)
+	parser.add_argument("--debug", action="store_true", default=debug)
 	args, unknown = parser.parse_known_args()
 	if args.forever:
 		while True:
