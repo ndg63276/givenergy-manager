@@ -154,6 +154,7 @@ def main(args):
 			if args.debug:
 				print("Checking "+device["name"])
 				print("Battery full enough: "+str(battery_full_enough))
+				print(msg)
 			if battery_full_enough is not None:
 				body += switch_device(device, battery_full_enough, msg)
 	if args.calculatemaxcharge or (
