@@ -189,7 +189,7 @@ def get_inverter_setting(headers, setting_no, inverter_id=None):
     return value
 
 
-def get_status():
+def do_get_status():
     output = {}
     j = read_json()
     headers = get_headers(j["givenergy_key"])
@@ -202,24 +202,85 @@ def get_status():
     return output
 
 
+def do_get_ac_settings():
+    output = {}
+    j = read_json()
+    headers = get_headers(j["givenergy_key"])
+    inverter_id = get_inverter_id(headers)
+    output["inverter_id"] = inverter_id
+    output["ac_charge_limit"] = get_AC_charge_limit(headers, inverter_id)
+    output["ac_charge_enabled"] = get_inverter_setting(headers, 66, inverter_id)
+    output["ac_charge_start_time"] = get_inverter_setting(headers, 64, inverter_id)
+    output["ac_charge_end_time"] = get_inverter_setting(headers, 65, inverter_id)
+    return output
+
+
+def do_set_ac_settings(args):
+    output = {}
+    j = read_json()
+    headers = get_headers(j["givenergy_key"])
+    inverter_id = get_inverter_id(headers)
+    output["inverter_id"] = inverter_id
+    if args.set_ac_charge_enabled:
+        success = set_inverter_setting(headers, 66, args.set_ac_charge_enabled, inverter_id)
+        if success:
+            output["ac_charge_enabled"] = args.set_ac_charge_enabled
+    if args.set_ac_charge_limit:
+        success = set_AC_charge_limit(headers, args.set_ac_charge_limit, inverter_id)
+        if success:
+            output["ac_charge_limit"] = args.set_ac_charge_limit
+    if args.set_ac_charge_start_time:
+        success = set_inverter_setting(headers, 64, args.set_ac_charge_start_time, inverter_id)
+        if success:
+            output["ac_charge_start_time"] = args.set_ac_charge_start_time
+    if args.set_ac_charge_end_time:
+        success = set_inverter_setting(headers, 65, args.set_ac_charge_end_time, inverter_id)
+        if success:
+            output["ac_charge_end_time"] = args.set_ac_charge_end_time
+    return output
+
+
 if __name__ == "__main__":
     # defaults
-    getstatus = False
+    get_status = False
+    get_ac_settings = False
+    set_ac_charge_enabled = None
+    set_ac_charge_limit = None
+    set_ac_charge_start_time = None
+    set_ac_charge_end_time = None
     output = {}
 
     # get from web requests
     fs = cgi.FieldStorage()
-    if fs.getvalue("getstatus") is not None and fs.getvalue("getstatus").lower() == "true":
-        getstatus = True
+    if fs.getvalue("get_status") is not None and fs.getvalue("get_status").lower() == "true":
+        get_status = True
+    if fs.getvalue("get_ac_settings") is not None and fs.getvalue("get_ac_settings").lower() == "true":
+        get_ac_settings = True
+    if fs.getvalue("set_ac_charge_enabled") is not None:
+        set_ac_charge_enabled = fs.getvalue("set_ac_charge_enabled")
+    if fs.getvalue("set_ac_charge_limit") is not None:
+        set_ac_charge_limit = int(fs.getvalue("set_ac_charge_limit"))
+    if fs.getvalue("set_ac_charge_start_time") is not None:
+        set_ac_charge_start_time = fs.getvalue("set_ac_charge_start_time")
+    if fs.getvalue("set_ac_charge_end_time") is not None:
+        set_ac_charge_end_time = fs.getvalue("set_ac_charge_end_time")
 
     # command line arguments
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--getstatus", action="store_true", default=getstatus)
+    parser.add_argument("--get_status", action="store_true", default=get_status)
+    parser.add_argument("--get_ac_settings", action="store_true", default=get_ac_settings)
+    parser.add_argument("--set_ac_charge_enabled", action="store", default=set_ac_charge_enabled)
+    parser.add_argument("--set_ac_charge_limit", action="store", type=int, default=set_ac_charge_limit)
+    parser.add_argument("--set_ac_charge_start_time", action="store", default=set_ac_charge_start_time)
+    parser.add_argument("--set_ac_charge_end_time", action="store", default=set_ac_charge_end_time)
 
     args, unknown = parser.parse_known_args()
-    if args.getstatus:
-        output = get_status()
-
+    if args.get_status:
+        output = do_get_status()
+    elif args.get_ac_settings:
+        output = do_get_ac_settings()
+    elif args.set_ac_charge_enabled or args.set_ac_charge_limit or args.set_ac_charge_start_time or args.set_ac_charge_end_time:
+        output = do_set_ac_settings(args)
     print("Content-Type: application/json")
     print()
     print(json.dumps(output))

@@ -84,7 +84,7 @@ function generateObjectFromPage() {
 		{"key": "givenergy_key", "type": "string"},
 		{"key": "email_address", "type": "string"},
 		{"key": "email_password", "type": "string"},
-		{"key": "set_max_charge_enabled", "type": "bool"},
+		{"key": "set_max_charge_enabled", "type": "data-bool"},
 		{"key": "time_to_set_max_charge", "type": "string"},
 		{"key": "solcast_key", "type": "string"},
 		{"key": "solcast_site", "type": "list"},
@@ -100,6 +100,9 @@ function generateObjectFromPage() {
 		key = field["key"];
 		val = document.getElementById(key).value;
 		if (field["type"] == "bool") {
+			output[key] = Boolean(Number(val));
+		} else if (field["type"] == "data-bool") {
+			val = document.getElementById(key).dataset.enabled;
 			output[key] = Boolean(Number(val));
 		} else if (field["type"] == "number") {
 			output[key] = Number(val);
@@ -158,17 +161,23 @@ function populatePage(result) {
 	for (key in result) {
 		if (key == "devices") {
 			populateDevices(result[key]);
-		}
-		el = document.getElementById(key);
-		if (el != null) {
-			val = result[key];
-			if (typeof(val) == "boolean") {
-				val = val ? 1 : 0;
+		} else {
+			el = document.getElementById(key);
+			if (el != null) {
+				val = result[key];
+				if (typeof(val) == "boolean") {
+					val = val ? 1 : 0;
+				}
+				if (key == "set_max_charge_enabled") {
+					el.children[val].classList.add("highlighted");
+					el.dataset.enabled = val;
+				} else {
+					el.value = val;
+				}
 			}
-			document.getElementById(key).value = val;
 		}
-	changeSlider();
 	}
+	changeSlider();
 }
 
 function populateDevices(devices) {
@@ -428,16 +437,35 @@ function changeDeviceSlider() {
 	disableDevice(deviceNumber, enable);
 }
 
+function enable_max_charge(el) {
+	console.log(el.id);
+	auto_el = document.getElementById("max_charge_auto");
+	manual_el = document.getElementById("max_charge_manual");
+	if (el.id == "max_charge_auto") {
+		document.getElementById("set_max_charge_enabled").dataset.enabled = 1;
+		auto_el.classList.add("highlighted");
+		manual_el.classList.remove("highlighted");
+	} else {
+		document.getElementById("set_max_charge_enabled").dataset.enabled = 0;
+		auto_el.classList.remove("highlighted");
+		manual_el.classList.add("highlighted");
+	}
+	changeSlider();
+}
+
 function changeSlider() {
-	max_charge_disabled = document.getElementById("set_max_charge_enabled").value == 0;
-	document.getElementById("time_to_set_max_charge").disabled = max_charge_disabled;
-	document.getElementById("solcast_key").disabled = max_charge_disabled;
-	document.getElementById("solcast_site").disabled = max_charge_disabled;
-	document.getElementById("very_sunny_day").disabled = max_charge_disabled;
-	document.getElementById("very_sunny_day_charge").disabled = max_charge_disabled;
-	document.getElementById("not_sunny_day").disabled = max_charge_disabled;
-	document.getElementById("not_sunny_day_charge").disabled = max_charge_disabled;
+	max_charge_disabled = document.getElementById("set_max_charge_enabled").dataset.enabled == 0;
 	document.getElementById("chargeChart").classList.toggle("hidden", max_charge_disabled);
+	var rows = document.getElementsByClassName("auto_max_charge");
+	for (var r = 0; r < rows.length; r++) {
+		row = rows.item(r);
+		row.disabled = max_charge_disabled;
+	}
+	var rows = document.getElementsByClassName("manual_max_charge");
+	for (var r = 0; r < rows.length; r++) {
+		row = rows.item(r);
+		row.disabled = !max_charge_disabled;
+	}
 	error_checking_disabled = document.getElementById("error_checking_enabled").value == 0;
 	document.getElementById("times_to_check_errors").disabled = error_checking_disabled;
 }
@@ -538,8 +566,56 @@ function drawGraph() {
 	chargeChart = new Chart(ctx, config);
 }
 
+function populate_ac_settings(json) {
+	console.log(json);
+	for (key in json) {
+		el = document.getElementById(key);
+		if (el != null) {
+			val = json[key];
+			if (typeof(val) == "boolean") {
+				val = val ? 1 : 0;
+			}
+			el.value = val;
+		}
+	}
+}
+
+function get_ac_settings() {
+	$.ajax({
+		url: "cgi-bin/givenergy_functions.py",
+		type: "GET",
+		data: {"get_ac_settings": true},
+		success: function(json) {
+			populate_ac_settings(json);
+		}
+	})
+}
+
+function set_ac_settings() {
+	console.log("set_ac_settings");
+	ac_charge_enabled = Boolean(parseInt(document.getElementById("ac_charge_enabled").value));
+	ac_charge_limit = document.getElementById("ac_charge_limit").value;
+	ac_charge_start_time = document.getElementById("ac_charge_start_time").value;
+	ac_charge_end_time = document.getElementById("ac_charge_end_time").value;
+	$.ajax({
+		url: "cgi-bin/givenergy_functions.py",
+		type: "GET",
+		data: {
+			"set_ac_charge_enabled": ac_charge_enabled,
+			"set_ac_charge_limit": ac_charge_limit,
+			"set_ac_charge_start_time": ac_charge_start_time,
+			"set_ac_charge_end_time": ac_charge_end_time,
+		},
+		success: function(json) {
+			populate_ac_settings(json);
+			writeToFile();
+		}
+	})
+}
+
 $(document).ready(function() {
 	readFromFile();
+	get_ac_settings();
 });
 
 </script>
@@ -599,6 +675,11 @@ input[type="range"] {
 	width: 50px;
 }
 
+.time {
+	width: 77px;
+	padding: 0px 0px 0px 1px;
+}
+
 .center {
 	text-align: center;
 }
@@ -624,6 +705,29 @@ input[type="range"] {
 	visibility: hidden;
 }
 
+.btn-group button {
+	border: 1px solid;
+	padding: 5px 24px;
+	cursor: pointer;
+	float: left;
+}
+
+.btn-group button:not(:last-child) {
+	border-right: none;
+}
+
+.btn-group button:hover {
+	background-color: lightblue;
+}
+
+.highlighted {
+	background-color: dodgerblue;
+}
+
+.highlighted:hover {
+	background-color: dodgerblue !important;
+}
+
 </style>
 </head>
 <body>
@@ -641,24 +745,41 @@ input[type="range"] {
 <tr><td>
 <table border=0>
 <th colspan=2>Setting the Overnight Charge Percentage</th>
-<tr><td>Enabled:</td><td class="center"><input type="range" min="0" max="1" value="0" id="set_max_charge_enabled" onchange="changeSlider()"></td>
+<tr><td>Enabled:</td>
+<td class="center">
+<div class="btn-group" id="set_max_charge_enabled" data-enabled="0">
+  <button id="max_charge_manual" onclick="enable_max_charge(this)">Manual</button>
+  <button id="max_charge_auto" onclick="enable_max_charge(this)">Automatic</button>
+</div>
+</td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">GivEnergy Manager can query Solcast and set your overnight battery charge percentage accordingly</span></i></td></tr>
-<tr><td>Time to Set Max Charge %age:</td><td class="center"><input type="time" id="time_to_set_max_charge"></td>
+<tr><td>Time to Set Max Charge %age:</td><td class="center"><input class="auto_max_charge" type="time" id="time_to_set_max_charge"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">The time of day at which the GivEnergy Manager should query Solcast and set your overnight battery charge percentage eg 20:30</span></i></td></tr>
-<tr><td>Solcast API Key:</td><td><input id="solcast_key"></td>
+<tr><td>Solcast API Key:</td><td><input class="auto_max_charge" id="solcast_key"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="solcast" href="https://toolkit.solcast.com.au/account">Solcast</a>, it will be 32 characters long</span></i></td></tr>
-<tr><td>Solcast Site Id(s):</td><td><input id="solcast_site"></td>
+<tr><td>Solcast Site Id(s):</td><td><input class="auto_max_charge" id="solcast_site"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="solcast" href="https://toolkit.solcast.com.au/rooftop-sites">Solcast</a>, it will be 16 characters separated by dashes. Separate multiple site id's with commas.</span></i></td></tr>
-<tr><td>Very Sunny Day kWh:</td><td><input id="very_sunny_day" onchange="drawGraph()"></td>
+<tr><td>Very Sunny Day kWh:</td><td><input class="auto_max_charge" id="very_sunny_day" onchange="drawGraph()"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Amount of solar you would expect to generate on a very sunny day eg 25</span></i></td></tr>
-<tr><td>Very Sunny Day Charge %age:</td><td><input id="very_sunny_day_charge" onchange="drawGraph()"></td>
+<tr><td>Very Sunny Day Charge %age:</td><td><input class="auto_max_charge" id="very_sunny_day_charge" onchange="drawGraph()"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Percentage you would like your battery charged to, on a very sunny day eg 50</span></i></td></tr>
-<tr><td>Not Sunny Day kWh:</td><td><input id="not_sunny_day" onchange="drawGraph()"></td>
+<tr><td>Not Sunny Day kWh:</td><td><input class="auto_max_charge" id="not_sunny_day" onchange="drawGraph()"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Amount of solar you would expect to generate on a not sunny day eg 10</span></i></td></tr>
-<tr><td>Not Sunny Day Charge %age:</td><td><input id="not_sunny_day_charge" onchange="drawGraph()"></td>
+<tr><td>Not Sunny Day Charge %age:</td><td><input class="auto_max_charge" id="not_sunny_day_charge" onchange="drawGraph()"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Percentage you would like your battery charged to, on a not sunny day eg 100</span></i></td></tr>
+<tr><td>AC Charging Enabled:</td>
+<td><input class="time manual_max_charge" type="range" min="0" max="1" value="0" id="ac_charge_enabled"></td></tr>
+<tr><td>Max Charge %age:</td>
+<td><input class="time manual_max_charge" id="ac_charge_limit"></td></tr>
+<tr><td>Charging Start Time:</td>
+<td><input type="time" class="manual_max_charge" id="ac_charge_start_time"></td></tr>
+<tr><td>Charging End Time:</td>
+<td><input type="time" class="manual_max_charge" id="ac_charge_end_time"></td></tr>
+<tr><td></td>
+<td><button class="manual_max_charge" onclick="set_ac_settings()">Set</button></td></tr>
+
 </table>
-</td><td>
+</td><td class="auto_max_charge">
 <canvas id="chargeChart"></canvas>
 </td></tr></table>
 <br />
