@@ -187,9 +187,10 @@ function populateDevices(devices) {
 		device = devices[i];
 		populateDevice(device, devicesElement, i);
 		disableDevice(i, device.control_enabled);
-		br = document.createElement("br");
-		br.id = i+"_br";
-		devicesElement.appendChild(br);
+		br1 = document.createElement("br");
+		hr = document.createElement("hr");
+		br2 = document.createElement("br");
+		devicesElement.append(br1, hr, br2);
 	}
 	addAddButton(i, devicesElement);
 }
@@ -210,9 +211,10 @@ function addDevice() {
 		device[fieldName] = "";
 	}
 	populateDevice(device, devicesElement, i);
-	br = document.createElement("br");
-	br.id = i+"_br";
-	devicesElement.appendChild(br);
+	br1 = document.createElement("br");
+	hr = document.createElement("hr");
+	br2 = document.createElement("br");
+	devicesElement.append(br1, hr, br2);
 	addAddButton(i, devicesElement);
 }
 
@@ -450,12 +452,16 @@ function enable_max_charge(el) {
 		auto_el.classList.remove("highlighted");
 		manual_el.classList.add("highlighted");
 	}
+	max_charge_disabled = document.getElementById("set_max_charge_enabled").dataset.enabled == 0;
+	document.getElementById("save_button").classList.toggle("hidden", max_charge_disabled);
+	document.getElementById("set_save_button").classList.toggle("hidden", !max_charge_disabled);
 	changeSlider();
 }
 
 function changeSlider() {
 	max_charge_disabled = document.getElementById("set_max_charge_enabled").dataset.enabled == 0;
 	document.getElementById("chargeChart").classList.toggle("hidden", max_charge_disabled);
+	save_el = document.getElementById("save_button");
 	var rows = document.getElementsByClassName("auto_max_charge");
 	for (var r = 0; r < rows.length; r++) {
 		row = rows.item(r);
@@ -613,8 +619,24 @@ function set_ac_settings() {
 	})
 }
 
+function change_tab(el) {
+	document.getElementById("general_tab").classList.toggle("highlighted", el.id == "general_tab");
+	document.getElementById("ac_charge_tab").classList.toggle("highlighted", el.id == "ac_charge_tab");
+	document.getElementById("error_checking_tab").classList.toggle("highlighted", el.id == "error_checking_tab");
+	document.getElementById("devices_tab").classList.toggle("highlighted", el.id == "devices_tab");
+	document.getElementById("general_table").classList.toggle("hidden", el.id != "general_tab");
+	document.getElementById("ac_charge_table").classList.toggle("hidden", el.id != "ac_charge_tab");
+	document.getElementById("error_checking_table").classList.toggle("hidden", el.id != "error_checking_tab");
+	document.getElementById("devices_table").classList.toggle("hidden", el.id != "devices_tab");
+	max_charge_disabled = document.getElementById("set_max_charge_enabled").dataset.enabled == 0;
+	document.getElementById("save_button").classList.toggle("hidden", el.id == "ac_charge_tab" && max_charge_disabled);
+	document.getElementById("set_save_button").classList.toggle("hidden", el.id != "ac_charge_tab" || !max_charge_disabled);
+}
+
+
 $(document).ready(function() {
 	readFromFile();
+	change_tab(document.getElementById("general_tab"));
 	get_ac_settings();
 });
 
@@ -728,10 +750,23 @@ input[type="range"] {
 	background-color: dodgerblue !important;
 }
 
+.width50 {
+	width: 50%;
+}
 </style>
 </head>
 <body>
-<table border=0>
+<div class="btn-group" id="choose_tab" data-enabled="0">
+  <button id="general_tab" onclick="change_tab(this)">General</button>
+  <button id="ac_charge_tab" onclick="change_tab(this)">Overnight Charging</button>
+  <button id="error_checking_tab" onclick="change_tab(this)">Inverter Error Checking</button>
+  <button id="devices_tab" onclick="change_tab(this)">Devices</button>
+</div>
+<br />
+<br />
+
+
+<table id="general_table" border=0>
 <th colspan=2>General</th>
 <tr><td>GivEnergy API Key:</td><td><input id="givenergy_key"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="_blank" href="https://givenergy.cloud/account-settings/security">GivEnergy</a>, it will be over 400 characters long</span></i></td></tr>
@@ -739,13 +774,13 @@ input[type="range"] {
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Notifications will be sent to this email address</span></i></td></tr>
 <tr><td>Gmail App Password:</td><td><input type="password" id="email_password"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Dont use your email password, generate an app password at <a target="_blank" href="https://myaccount.google.com/apppasswords">Google</a></span></i></td></tr>
-</table><br />
+</table>
 
-<table border=0>
+<table id="ac_charge_table" border=0>
 <tr><td>
 <table border=0>
 <th colspan=2>Setting the Overnight Charge Percentage</th>
-<tr><td>Enabled:</td>
+<tr><td>Manual/Automatic:</td>
 <td class="center">
 <div class="btn-group" id="set_max_charge_enabled" data-enabled="0">
   <button id="max_charge_manual" onclick="enable_max_charge(this)">Manual</button>
@@ -775,28 +810,29 @@ input[type="range"] {
 <td><input type="time" class="manual_max_charge" id="ac_charge_start_time"></td></tr>
 <tr><td>Charging End Time:</td>
 <td><input type="time" class="manual_max_charge" id="ac_charge_end_time"></td></tr>
-<tr><td></td>
-<td><button class="manual_max_charge" onclick="set_ac_settings()">Set</button></td></tr>
 
 </table>
-</td><td class="auto_max_charge">
+</td><td class="width50">
 <canvas id="chargeChart"></canvas>
 </td></tr></table>
-<br />
-<table border=0>
+
+<table id="error_checking_table" border=0>
 <th colspan=2>Inverter Error Checking</th>
 <tr><td>Enabled:</td><td class="center"><input type="range" min="0" max="1" value="0" id="error_checking_enabled" onchange="changeSlider()"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">GivEnergy Manager can do regular checks for inervtor errors and reboot the inverter if needed</span></i></td></tr>
 <tr><td>Times to Check For Errors:</td><td><input id="times_to_check_errors"></td>
-<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">The times each hour that GivEnergy Manager should check your invertor for errors, eg 0,30 (leave blank to disable error checking)</span></i></td></tr>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">The times each hour that GivEnergy Manager should check your invertor for errors, eg 0,30</span></i></td></tr>
 </table>
-<h4>Devices</h4>
 
-<div id="devices">
-</div>
+<table id="devices_table" border=0>
+<th>Devices</th>
+<tr id="devices">
+</tr>
+</table>
 <br />
-<button onclick="readFromFile()">Reload From File</button><br /><br />
-<button onclick="writeToFile()">Save to File</button>
+<!--button onclick="readFromFile()">Reload From File</button><br /><br /-->
+<button id="save_button" onclick="writeToFile()">Save to File</button>
+<button class="hidden" id="set_save_button" onclick="set_ac_settings()">Set and Save to File</button>
 <span id="success"></span>
 <br /><br />
 
