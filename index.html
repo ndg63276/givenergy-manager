@@ -129,6 +129,15 @@ function generateObjectFromPage() {
 			fieldName = field["name"];
 			dev[fieldName] = document.getElementById(i+"_"+fieldName).value;
 		}
+		var boost_end = document.getElementById(i+"_boost_end").value;
+		if (boost_end != "") {
+			var now = new Date;
+			var end = now.getTime() + boost_end*60000;
+			dev["boost"] = {
+				"onoff": document.getElementById(i+"_boost_onoff").value,
+				"end": end,
+			}
+		}
 		var batteryRows = document.getElementsByClassName(i+"_time");
 		for (var b = 0; b < batteryRows.length; b++) {
 			batteryRow = batteryRows.item(b);
@@ -275,20 +284,54 @@ function populateDevice(device, devicesElement, i) {
 	table = document.createElement("table");
 	table.classList.add("device");
 	table.id = i+"_device";
-	tr = createRow("Name:", device.name, "name", i+"_name");
-	table.appendChild(tr);
-	tr = createRow("Enabled:", device.control_enabled ? 1 : 0, "slider", i+"_slider");
-	table.appendChild(tr);
-	tr = createRow("Type:", device.type, "type", i+"_type");
-	table.appendChild(tr);
+	tr1 = createRow("Name:", device.name, "name", i+"_name");
+	tr2 = createRow("Enabled:", device.control_enabled ? 1 : 0, "slider", i+"_slider");
+	tr3 = createRow("Type:", device.type, "type", i+"_type");
+	table.append(tr1, tr2, tr3);
 	deviceType = device["type"];
 	for (field of deviceTypes[deviceType]["fields"]) {
 		tr = createRow(field["text"], device[field["name"]], field["type"], i+"_"+field["name"]);
 		table.appendChild(tr);	
 	}
-	tr = populateBatteryFullLevels(device.battery_full_levels, i);
+	tr4 = createBoostRow(device.boost, i);
 	table.appendChild(tr);
+	tr5 = populateBatteryFullLevels(device.battery_full_levels, i);
+	table.append(tr4, tr5);
 	devicesElement.appendChild(table);
+}
+
+function createBoostRow(val, i) {
+	tr = document.createElement("tr");
+	td1 = document.createElement("td");
+	text = document.createTextNode("Boost:");
+	td1.appendChild(text);
+	td2 = document.createElement("td");
+	sel = document.createElement("select");
+	sel.id = i+"_boost_onoff";
+	sel.classList.add("level", "center");
+	for (opt of ["On", "Off"]) {
+		option = document.createElement("option");
+		option.value = opt;
+		option.text = opt;
+		if (val != null && "onoff" in val && val["onoff"] == opt) {
+			option.selected = true;
+		}
+		sel.appendChild(option);
+	}
+	text1 = document.createTextNode(" for ");
+	input = document.createElement("input");
+	input.id = i+"_boost_end";
+	input.classList.add("level", "center");
+	if (val != null && "end" in val) {
+		now = new Date;
+		if (now.getTime() < val["end"]) {
+			input.value = parseInt((val["end"] - now.getTime()) / 60000);
+		}
+	}
+	text2 = document.createTextNode(" minutes");
+	td2.append(sel, text1, input, text2);
+	tr.append(td1, td2);
+	return tr
 }
 
 function populateBatteryFullLevels(levels, i) {
@@ -400,6 +443,10 @@ function createLevel() {
 function disableDevice(deviceNumber, enable) {
 	deviceTypeEl = document.getElementById(deviceNumber+"_type");
 	deviceTypeEl.disabled = !enable;
+	deviceBoostOnOffEl = document.getElementById(deviceNumber+"_boost_onoff");
+	deviceBoostOnOffEl.disabled = !enable;
+	deviceBoostEndEl = document.getElementById(deviceNumber+"_boost_end");
+	deviceBoostEndEl.disabled = !enable;
 	fields = deviceTypes[deviceTypeEl.value]["fields"];
 	for (field of fields) {
 		document.getElementById(deviceNumber+"_"+field["name"]).disabled = !enable;

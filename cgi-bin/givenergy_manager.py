@@ -2,7 +2,7 @@
 
 import argparse
 import cgi
-from time import sleep
+from time import time, sleep
 from datetime import datetime
 from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit, get_AC_charge_limit, get_battery_level
 from solcast_functions import get_tomorrows_forecast_total
@@ -150,7 +150,13 @@ def main(args):
 		for device in j["devices"]:
 			if "control_enabled" not in device or device["control_enabled"] == False:
 				continue
-			battery_full_enough, msg = is_battery_full_enough(battery_level, device["battery_full_levels"])
+			if "boost" in device and "end" in device["boost"] and device["boost"]["end"] > time()*1000:
+				battery_full_enough = device["boost"]["onoff"] == "On"
+				onoff = "on" if battery_full_enough else "off"
+				mins_left = int((device["boost"]["end"]/1000 - time()) / 60)
+				msg = "Boosting " + onoff + " for another " + str(mins_left) + " minutes\n"
+			else:
+				battery_full_enough, msg = is_battery_full_enough(battery_level, device["battery_full_levels"])
 			if args.debug:
 				print("Checking "+device["name"])
 				print("Battery full enough: "+str(battery_full_enough))
