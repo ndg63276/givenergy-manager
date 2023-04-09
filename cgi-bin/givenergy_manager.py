@@ -2,6 +2,7 @@
 
 import argparse
 import cgi
+import json
 from time import time, sleep
 from datetime import datetime
 from givenergy_functions import restart_inverter, get_grid_voltage, get_inverter_status, set_AC_charge_limit, get_AC_charge_limit, get_battery_level
@@ -39,7 +40,7 @@ def check_for_errors(headers):
 	return ""
 
 
-def calculate_max_charge(headers, j):
+def calculate_max_charge(headers, j, jsonoutput=False):
 	tomorrows_estimate = round(get_tomorrows_forecast_total(j["solcast_key"], j["solcast_site"]), 2)
 	maxmin_tomorrows_estimate = max(min(j["very_sunny_day"], tomorrows_estimate), j["not_sunny_day"])  # ensure estimate is between eg 10 and 20 kWh
 	ranged_tomorrows_estimate = maxmin_tomorrows_estimate - j["not_sunny_day"]  # ensure between 0 and eg 10
@@ -47,6 +48,8 @@ def calculate_max_charge(headers, j):
 	reqd_ac_charge = int(j["not_sunny_day_charge"] - ranged_tomorrows_estimate * percentage_difference_per_kwh)  # reqd charge between eg 70% and 100%
 	output = "Tomorrow's solar estimate is "+str(tomorrows_estimate)+"kWh, so have set AC charging to "+str(reqd_ac_charge)+"%.\n"
 	output = set_max_charge(headers, reqd_ac_charge, output)
+	if jsonoutput:
+		output = {"tomorrows_estimate": tomorrows_estimate, "reqd_ac_charge": reqd_ac_charge, "message": output}
 	return output
 
 
@@ -166,7 +169,10 @@ def main(args):
 	if args.calculatemaxcharge or (
 			j["set_max_charge_enabled"] is True and
 			datetime.strftime(datetime.now(), "%H:%M") == j["time_to_set_max_charge"]):
-		body += calculate_max_charge(headers, j)
+		if args.jsonoutput:
+			body = calculate_max_charge(headers, j, True)
+		else:
+			body += calculate_max_charge(headers, j)
 	if args.forceerrorcheck or (
 			j["error_checking_enabled"] is True and
 			datetime.now().minute in j["times_to_check_errors"]):
@@ -180,6 +186,10 @@ def main(args):
 		if body != "":
 			send_email(subject, body)
 	else:
+		if args.jsonoutput:
+			print("Content-Type: application/json")
+			print()
+			body = json.dumps(body)
 		print(body)
 
 
@@ -194,6 +204,7 @@ if __name__ == "__main__":
 	email = False
 	testemail = False
 	batterylevel = False
+	jsonoutput = False
 	debug = False
 
 	# get from web requests
@@ -212,6 +223,8 @@ if __name__ == "__main__":
 		testemail = True
 	if fs.getvalue("batterylevel") is not None and fs.getvalue("batterylevel").lower() == "true":
 		batterylevel = True
+	if fs.getvalue("jsonoutput") is not None and fs.getvalue("jsonoutput").lower() == "true":
+		jsonoutput = True
 	if fs.getvalue("debug") is not None and fs.getvalue("debug").lower() == "true":
 		debug = True
 
@@ -226,6 +239,7 @@ if __name__ == "__main__":
 	parser.add_argument("--email", action="store_true", default=email)
 	parser.add_argument("--testemail", action="store_true", default=testemail)
 	parser.add_argument("--batterylevel", action="store_true", default=batterylevel)
+	parser.add_argument("--jsonoutput", action="store_true", default=jsonoutput)
 	parser.add_argument("--debug", action="store_true", default=debug)
 	args, unknown = parser.parse_known_args()
 	if args.forever:

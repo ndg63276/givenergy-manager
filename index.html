@@ -633,6 +633,22 @@ function populate_ac_settings(json) {
 	}
 }
 
+function set_max_charge() {
+	$.ajax({
+		url: "cgi-bin/givenergy_manager.py",
+		type: "GET",
+		data: {"calculatemaxcharge": true, "jsonoutput": true},
+		success: function(json) {
+			console.log(json);
+			message_el = document.getElementById("max_charge_message");
+			message_el.classList.remove("hidden");
+			message_el.innerHTML = json["message"];
+			ac_charge_limit_el = document.getElementById("ac_charge_limit");
+			ac_charge_limit_el.value = json["reqd_ac_charge"];
+		}
+	})
+}
+
 function get_ac_settings() {
 	$.ajax({
 		url: "cgi-bin/givenergy_functions.py",
@@ -823,7 +839,8 @@ input[type="range"] {
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Dont use your email password, generate an app password at <a target="_blank" href="https://myaccount.google.com/apppasswords">Google</a></span></i></td></tr>
 </table>
 
-<table id="ac_charge_table" border=0>
+<div id="ac_charge_table">
+<table border=0>
 <tr><td>
 <table border=0>
 <th colspan=2>Setting the Overnight Charge Percentage</th>
@@ -835,7 +852,8 @@ input[type="range"] {
 </div>
 </td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">GivEnergy Manager can query Solcast and set your overnight battery charge percentage accordingly</span></i></td></tr>
-<tr><td>Time to Set Max Charge %age:</td><td class="center"><input class="auto_max_charge" type="time" id="time_to_set_max_charge"></td>
+<tr><td>Time to Set Max Charge %age:</td><td class="center"><input class="auto_max_charge" type="time" id="time_to_set_max_charge">
+<button onclick="set_max_charge()">Set now</button></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">The time of day at which the GivEnergy Manager should query Solcast and set your overnight battery charge percentage eg 20:30</span></i></td></tr>
 <tr><td>Solcast API Key:</td><td><input class="auto_max_charge" id="solcast_key"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="solcast" href="https://toolkit.solcast.com.au/account">Solcast</a>, it will be 32 characters long</span></i></td></tr>
@@ -858,10 +876,13 @@ input[type="range"] {
 <tr><td>Charging End Time:</td>
 <td><input type="time" class="manual_max_charge" id="ac_charge_end_time"></td></tr>
 
+
 </table>
 </td><td class="width50">
 <canvas id="chargeChart"></canvas>
 </td></tr></table>
+<div id="max_charge_message" class="hidden"></div>
+</div>
 
 <table id="error_checking_table" border=0>
 <th colspan=2>Inverter Error Checking</th>
