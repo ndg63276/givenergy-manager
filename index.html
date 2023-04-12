@@ -663,6 +663,20 @@ function check_inverter() {
 	})
 }
 
+function send_test_email() {
+	$.ajax({
+		url: "cgi-bin/givenergy_manager.py",
+		type: "GET",
+		data: {"testemail": true, "jsonoutput": true},
+		success: function(json) {
+			console.log(json);
+			message_el = document.getElementById("message");
+			message_el.classList.remove("hidden");
+			message_el.innerHTML = json["message"];
+		}
+	})
+}
+
 function get_ac_settings() {
 	$.ajax({
 		url: "cgi-bin/givenergy_functions.py",
@@ -852,6 +866,7 @@ input[type="range"] {
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Notifications will be sent to this email address</span></i></td></tr>
 <tr><td>Gmail App Password:</td><td><input type="password" id="email_password"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Dont use your email password, generate an app password at <a target="_blank" href="https://myaccount.google.com/apppasswords">Google</a></span></i></td></tr>
+<tr><td><button onclick="send_test_email()">Send Test Email</button></td></tr>
 </table>
 
 <div id="ac_charge_table">

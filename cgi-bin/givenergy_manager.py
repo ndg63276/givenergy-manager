@@ -193,13 +193,17 @@ def main(args):
 			body += "The battery is "+str(battery_level)+"% full.\n"
 		else:
 			body += "Error reading the battery level: "+battery_level
+	if args.jsonoutput:
+		print("Content-Type: application/json")
+		print()
 	if args.email or args.testemail:
 		if body != "":
 			send_email(subject, body)
+		if args.jsonoutput:
+			body = {"message": "Email sent."}
+			print(json.dumps(body))
 	else:
 		if args.jsonoutput:
-			print("Content-Type: application/json")
-			print()
 			body = json.dumps(body)
 		print(body)
 
