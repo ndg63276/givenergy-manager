@@ -10,34 +10,42 @@ from solcast_functions import get_tomorrows_forecast_total
 from general_functions import read_json, get_headers, send_email
 
 
-def check_for_errors(headers):
+def check_for_errors(headers, jsonoutput=False):
 	"""
 	Check if inverter is in error state.
 	If in an error state for more than 15 mins and
 	grid voltage is not abnormally high, then
 	reboot the inverter.
 	"""
+	output = ""
 	inverter_status = get_inverter_status(headers)
+	if jsonoutput:
+		output = "GivEnergy inverter status is " + inverter_status + "."
 	if inverter_status in ["UNKNOWN", "LOST"]:
 		sleep(60)
 		inverter_status = get_inverter_status(headers)
 		if inverter_status in ["UNKNOWN", "LOST"]:
-			return "Error: GivEnergy inverter status is " + inverter_status + "\n."
+			output = "Error: GivEnergy inverter status is " + inverter_status + "\n."
 
 	if inverter_status == "ERROR":
 		grid_voltage = get_grid_voltage(headers)
 		if type(grid_voltage) == float and grid_voltage > 252:
-			return "Error: GivEnergy inverter status is ERROR, but grid voltage is at "+str(grid_voltage)+" volts, so no action taken.\n"
-		sleep(900)
-		inverter_status = get_inverter_status(headers)
-		if inverter_status == "ERROR":
-			grid_voltage = get_grid_voltage(headers)
-			if type(grid_voltage) == float and grid_voltage > 252:
-				return "Error: GivEnergy inverter status is ERROR, but grid voltage is at "+str(grid_voltage)+" volts, so no action taken.\n"
-			body = "Error: GivEnergy inverter status has been ERROR for 15 mins, so rebooting the inverter...\n"
-			body += restart_inverter(headers)
-			return body
-	return ""
+			output = "Error: GivEnergy inverter status is ERROR, but grid voltage is at "+str(grid_voltage)+" volts, so no action taken.\n"
+		elif jsonoutput:
+			output = "Error: GivEnergy inverter status is ERROR. If this continues for 15 minutes, restart the inverter."
+		else:
+			sleep(900)
+			inverter_status = get_inverter_status(headers)
+			if inverter_status == "ERROR":
+				grid_voltage = get_grid_voltage(headers)
+				if type(grid_voltage) == float and grid_voltage > 252:
+					output = "Error: GivEnergy inverter status is ERROR, but grid voltage is at "+str(grid_voltage)+" volts, so no action taken.\n"
+				else:
+					output = "Error: GivEnergy inverter status has been ERROR for 15 mins, so rebooting the inverter...\n"
+					output += restart_inverter(headers)
+	if jsonoutput:
+		output = {"message": output}
+	return output
 
 
 def calculate_max_charge(headers, j, jsonoutput=False):
@@ -176,7 +184,10 @@ def main(args):
 	if args.forceerrorcheck or (
 			j["error_checking_enabled"] is True and
 			datetime.now().minute in j["times_to_check_errors"]):
-		body += check_for_errors(headers)
+		if args.jsonoutput:
+			body = check_for_errors(headers, True)
+		else:
+			body += check_for_errors(headers)
 	if args.batterylevel:
 		if type(battery_level) == int:
 			body += "The battery is "+str(battery_level)+"% full.\n"

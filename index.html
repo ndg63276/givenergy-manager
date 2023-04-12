@@ -640,11 +640,25 @@ function set_max_charge() {
 		data: {"calculatemaxcharge": true, "jsonoutput": true},
 		success: function(json) {
 			console.log(json);
-			message_el = document.getElementById("max_charge_message");
+			message_el = document.getElementById("message");
 			message_el.classList.remove("hidden");
 			message_el.innerHTML = json["message"];
 			ac_charge_limit_el = document.getElementById("ac_charge_limit");
 			ac_charge_limit_el.value = json["reqd_ac_charge"];
+		}
+	})
+}
+
+function check_inverter() {
+	$.ajax({
+		url: "cgi-bin/givenergy_manager.py",
+		type: "GET",
+		data: {"forceerrorcheck": true, "jsonoutput": true},
+		success: function(json) {
+			console.log(json);
+			message_el = document.getElementById("message");
+			message_el.classList.remove("hidden");
+			message_el.innerHTML = json["message"];
 		}
 	})
 }
@@ -683,6 +697,7 @@ function set_ac_settings() {
 }
 
 function change_tab(el) {
+	document.getElementById("message").classList.add("hidden");
 	document.getElementById("general_tab").classList.toggle("highlighted", el.id == "general_tab");
 	document.getElementById("ac_charge_tab").classList.toggle("highlighted", el.id == "ac_charge_tab");
 	document.getElementById("error_checking_tab").classList.toggle("highlighted", el.id == "error_checking_tab");
@@ -881,7 +896,6 @@ input[type="range"] {
 </td><td class="width50">
 <canvas id="chargeChart"></canvas>
 </td></tr></table>
-<div id="max_charge_message" class="hidden"></div>
 </div>
 
 <table id="error_checking_table" border=0>
@@ -890,6 +904,7 @@ input[type="range"] {
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">GivEnergy Manager can do regular checks for inervtor errors and reboot the inverter if needed</span></i></td></tr>
 <tr><td>Times to Check For Errors:</td><td><input id="times_to_check_errors"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">The times each hour that GivEnergy Manager should check your invertor for errors, eg 0,30</span></i></td></tr>
+<tr><td><button onclick="check_inverter()">Check now</button></td></tr>
 </table>
 
 <table id="devices_table" border=0>
@@ -897,6 +912,7 @@ input[type="range"] {
 <tr id="devices">
 </tr>
 </table>
+<div id="message" class="hidden"></div>
 <br />
 <!--button onclick="readFromFile()">Reload From File</button><br /><br /-->
 <button id="save_button" onclick="writeToFile()">Save to File</button>
