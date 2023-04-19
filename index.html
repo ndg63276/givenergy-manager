@@ -84,6 +84,7 @@ function generateObjectFromPage() {
 		{"key": "givenergy_key", "type": "string"},
 		{"key": "email_address", "type": "string"},
 		{"key": "email_password", "type": "string"},
+		{"key": "server_host", "type": "string"},
 		{"key": "set_max_charge_enabled", "type": "data-bool"},
 		{"key": "time_to_set_max_charge", "type": "string"},
 		{"key": "solcast_key", "type": "string"},
@@ -187,6 +188,7 @@ function populatePage(result) {
 		}
 	}
 	changeSlider();
+	get_server_host();
 }
 
 function populateDevices(devices) {
@@ -725,6 +727,13 @@ function change_tab(el) {
 	document.getElementById("set_save_button").classList.toggle("hidden", el.id != "ac_charge_tab" || !max_charge_disabled);
 }
 
+function get_server_host() {
+	server_host_el = document.getElementById("server_host");
+	if (server_host_el.value == "") {
+		this_url = location.protocol+"//"+location.host+"/";
+		server_host_el.value = this_url;
+	}
+}
 
 $(document).ready(function() {
 	readFromFile();
@@ -862,6 +871,8 @@ input[type="range"] {
 <th colspan=2>General</th>
 <tr><td>GivEnergy API Key:</td><td><input id="givenergy_key"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Get this from <a target="_blank" href="https://givenergy.cloud/account-settings/security">GivEnergy</a>, it will be over 400 characters long</span></i></td></tr>
+<tr><td>Server hostname:</td><td><input id="server_host"></td>
+<td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Emails may contain links to this server</span></i></td></tr>
 <tr><td>Gmail Address:</td><td><input id="email_address"></td>
 <td><i class="fa fa-question-circle tooltip"><span class="tooltiptext">Notifications will be sent to this email address</span></i></td></tr>
 <tr><td>Gmail App Password:</td><td><input type="password" id="email_password"></td>
