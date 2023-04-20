@@ -57,7 +57,13 @@ def calculate_max_charge(headers, j, jsonoutput=False):
 	output = "Tomorrow's solar estimate is "+str(tomorrows_estimate)+"kWh, so have set AC charging to "+str(reqd_ac_charge)+"%.\n"
 	output = set_max_charge(headers, reqd_ac_charge, output)
 	if jsonoutput:
-		output = {"tomorrows_estimate": tomorrows_estimate, "reqd_ac_charge": reqd_ac_charge, "message": output}
+		return {"tomorrows_estimate": tomorrows_estimate, "reqd_ac_charge": reqd_ac_charge, "message": output}
+	if "server_host" in j and j["server_host"] != "":
+		manual_url = j["server_host"] + "cgi-bin/givenergy_functions.py?set_ac_charge_limit="
+		output += "Set to 25% by clicking here: "+manual_url+"25.\n"
+		output += "Set to 50% by clicking here: "+manual_url+"50.\n"
+		output += "Set to 75% by clicking here: "+manual_url+"75.\n"
+		output += "Set to 100% by clicking here: "+manual_url+"100.\n"
 	return output
 
 
