@@ -22,7 +22,7 @@ def check_for_errors(headers, jsonoutput=False):
 	if jsonoutput:
 		output = "GivEnergy inverter status is " + inverter_status + "."
 	if inverter_status in ["UNKNOWN", "LOST"]:
-		sleep(60)
+		sleep(300)
 		inverter_status = get_inverter_status(headers)
 		if inverter_status in ["UNKNOWN", "LOST"]:
 			output = "Error: GivEnergy inverter status is " + inverter_status + "\n."
@@ -60,6 +60,7 @@ def calculate_max_charge(headers, j, jsonoutput=False):
 		return {"tomorrows_estimate": tomorrows_estimate, "reqd_ac_charge": reqd_ac_charge, "message": output}
 	if "server_host" in j and j["server_host"] != "":
 		manual_url = j["server_host"] + "cgi-bin/givenergy_functions.py?set_ac_charge_limit="
+		output += "\n"
 		output += "Set to 25% by clicking here: "+manual_url+"25.\n"
 		output += "Set to 50% by clicking here: "+manual_url+"50.\n"
 		output += "Set to 75% by clicking here: "+manual_url+"75.\n"
