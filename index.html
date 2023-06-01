@@ -541,7 +541,8 @@ function changeDeviceType() {
 		tr = createRow(field["text"], "", field["type"], i+"_"+field["name"]);
 		table.appendChild(tr);	
 	}
-	table.appendChild(batteryLevelsRow);
+	tr4 = createBoostRow(device.boost, i);
+	table.append(tr4, batteryLevelsRow);
 }
 
 function drawGraph() {
