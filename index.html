@@ -194,7 +194,7 @@ function populatePage(result) {
 function populateDevices(devices) {
 	devicesElement = document.getElementById("devices");
 	devicesElement.innerHTML = "";
-	for (i in devices) {
+	for (i=0; i<devices.length; i++) {
 		device = devices[i];
 		populateDevice(device, devicesElement, i);
 		disableDevice(i, device.control_enabled);
@@ -296,7 +296,6 @@ function populateDevice(device, devicesElement, i) {
 		table.appendChild(tr);	
 	}
 	tr4 = createBoostRow(device.boost, i);
-	table.appendChild(tr);
 	tr5 = populateBatteryFullLevels(device.battery_full_levels, i);
 	table.append(tr4, tr5);
 	devicesElement.appendChild(table);
