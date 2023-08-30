@@ -42,7 +42,7 @@ def check_for_errors(headers, jsonoutput=False):
 					output = "Error: GivEnergy inverter status is ERROR, but grid voltage is at "+str(grid_voltage)+" volts, so no action taken.\n"
 				else:
 					output = "Error: GivEnergy inverter status has been ERROR for 15 mins, so rebooting the inverter...\n"
-					output += restart_inverter(headers)
+					output += str(restart_inverter(headers))
 	if jsonoutput:
 		output = {"message": output}
 	return output
@@ -212,7 +212,8 @@ def main(args):
 	else:
 		if args.jsonoutput:
 			body = json.dumps(body)
-		print(body)
+		if body != "":
+			print(body)
 
 
 if __name__ == "__main__":
