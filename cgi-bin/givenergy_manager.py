@@ -200,6 +200,9 @@ def main(args):
 			body += "The battery is "+str(battery_level)+"% full.\n"
 		else:
 			body += "Error reading the battery level: "+battery_level
+	if args.logdaikin:
+		from daikin_functions import get_temps
+		get_temps()
 	if args.jsonoutput:
 		print("Content-Type: application/json")
 		print()
@@ -227,6 +230,7 @@ if __name__ == "__main__":
 	email = False
 	testemail = False
 	batterylevel = False
+	logdaikin = False
 	jsonoutput = False
 	debug = False
 
@@ -246,6 +250,8 @@ if __name__ == "__main__":
 		testemail = True
 	if fs.getvalue("batterylevel") is not None and fs.getvalue("batterylevel").lower() == "true":
 		batterylevel = True
+	if fs.getvalue("logdaikin") is not None and fs.getvalue("logdaikin").lower() == "true":
+		logdaikin = True
 	if fs.getvalue("jsonoutput") is not None and fs.getvalue("jsonoutput").lower() == "true":
 		jsonoutput = True
 	if fs.getvalue("debug") is not None and fs.getvalue("debug").lower() == "true":
@@ -262,6 +268,7 @@ if __name__ == "__main__":
 	parser.add_argument("--email", action="store_true", default=email)
 	parser.add_argument("--testemail", action="store_true", default=testemail)
 	parser.add_argument("--batterylevel", action="store_true", default=batterylevel)
+	parser.add_argument("--logdaikin", action="store_true", default=logdaikin)
 	parser.add_argument("--jsonoutput", action="store_true", default=jsonoutput)
 	parser.add_argument("--debug", action="store_true", default=debug)
 	args, unknown = parser.parse_known_args()
