@@ -102,6 +102,13 @@ def is_in_eco_mode(headers, inverter_id=None):
     return get_inverter_setting(headers, 24, inverter_id)
 
 
+def is_in_paused_mode(headers, inverter_id=None):
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    battery_discharge_power = get_inverter_setting(headers, 73, inverter_id)
+    return battery_discharge_power < 100
+
+
 def switch_DC_discharging(headers, value, inverter_id=None):
     changed = False
     if inverter_id is None:
@@ -159,6 +166,44 @@ def end_DC_discharging(headers, inverter_id=None):
         # enable AC charge
         sleep(5)
         success = set_inverter_setting(headers, 66, True, inverter_id)
+    return success
+
+
+def switch_battery_use(headers, value, inverter_id=None):
+    # value == True means use the battery
+    # value == False means dont use the battery
+    changed = False
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    is_paused = is_in_paused_mode(headers, inverter_id)
+    if value is True and is_paused is True:
+        changed = resume_battery_use(headers, inverter_id)
+    if value is False and is_paused is False:
+        changed = pause_battery_use(headers, inverter_id)
+    return changed
+
+
+def pause_battery_use(headers, inverter_id=None):
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    # Set zero battery charge power
+    success = set_inverter_setting(headers, 72, 0, inverter_id)
+    if success:
+        # set zero battery discharge power
+        sleep(5)
+        success = set_inverter_setting(headers, 73, 0, inverter_id)
+    return success
+
+
+def resume_battery_use(headers, inverter_id=None):
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    # Set full battery charge power
+    success = set_inverter_setting(headers, 72, 3000, inverter_id)
+    if success:
+        # Set full battery discharge power
+        sleep(5)
+        success = set_inverter_setting(headers, 73, 3000, inverter_id)
     return success
 
 
