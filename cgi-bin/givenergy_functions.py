@@ -169,9 +169,11 @@ def end_DC_discharging(headers, inverter_id=None):
     return success
 
 
-def switch_battery_use(headers, value, inverter_id=None):
+def switch_battery_use(value, inverter_id=None):
     # value == True means use the battery
     # value == False means dont use the battery
+    j = read_json()
+    headers = get_headers(j["givenergy_key"])
     changed = False
     if inverter_id is None:
         inverter_id = get_inverter_id(headers)
