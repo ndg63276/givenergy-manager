@@ -76,6 +76,7 @@ def get_temps():
             temps[now]["hot_water_temp"] = device["sensoryData"]["value"]["tankTemperature"]["value"]
         elif device["managementPointType"] == "climateControl":
             temps[now]["heating_temp"] = device["sensoryData"]["value"]["roomTemperature"]["value"]
+            temps[now]["outdoor_temp"] = device["sensoryData"]["value"]["outdoorTemperature"]["value"]
     store_tokens(temps, log_file)
     return temps
 
