@@ -77,6 +77,7 @@ def get_temps():
         elif device["managementPointType"] == "climateControl":
             temps[now]["heating_temp"] = device["sensoryData"]["value"]["roomTemperature"]["value"]
             temps[now]["outdoor_temp"] = device["sensoryData"]["value"]["outdoorTemperature"]["value"]
+            temps[now]["setpoint_temp"] = device['temperatureControl']['value']['operationModes']['heating']['setpoints']['roomTemperature']['value']
     store_tokens(temps, log_file)
     return temps
 
@@ -86,18 +87,21 @@ def do_discovery():
     if not check_login(j):
         j = refresh_tokens()
     devices = discover(j)
-    store_devices(devices, tokens_file)
+    if len(devices) > 0:
+        store_devices(devices, tokens_file)
     return devices
 
 
 def discover(j):
+    devices = []
     url = get_base_url()
     headers = {
         "Authorization": "Bearer "+j["AccessToken"],
         "x-api-key": "xw6gvOtBHq5b1pyceadRp6rujSNSZdjx2AqT03iC"
     }
     r = requests.get(url, headers=headers)
-    devices = r.json()[0]["managementPoints"]
+    if len(r.json()) > 0:
+        devices = r.json()[0]["managementPoints"]
     return devices
 
 
