@@ -109,6 +109,13 @@ def is_in_paused_mode(headers, inverter_id=None):
     return battery_discharge_power < 100
 
 
+def get_discharge_power(headers, inverter_id=None):
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    battery_discharge_power = get_inverter_setting(headers, 73, inverter_id)
+    return battery_discharge_power
+
+
 def switch_DC_discharging(headers, value, inverter_id=None):
     changed = False
     if inverter_id is None:
@@ -182,6 +189,19 @@ def switch_battery_use(value, inverter_id=None):
         changed = resume_battery_use(headers, inverter_id)
     if value is False and is_paused is False:
         changed = pause_battery_use(headers, inverter_id)
+    return changed
+
+
+def set_discharge_power(value, inverter_id=None):
+    # value is a number
+    j = read_json()
+    headers = get_headers(j["givenergy_key"])
+    changed = False
+    if inverter_id is None:
+        inverter_id = get_inverter_id(headers)
+    current_discharge_power = get_discharge_power(headers, inverter_id)
+    if abs(current_discharge_power - value) > 50:
+        changed = set_inverter_setting(headers, 73, value, inverter_id)
     return changed
 
 
